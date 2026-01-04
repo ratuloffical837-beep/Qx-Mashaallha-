@@ -5,7 +5,9 @@ class SignalEngine:
         pass
 
     def analyze_candles(self, candles):
-        if len(candles) < 10: return "WAIT"
+    if len(candles) == 0:
+        return "NO DATA FROM API" # এটি পরিবর্তন করে দেখুন
+
         
         # সর্বশেষ ক্যান্ডেল এবং তার আগের ডেটা
         current = candles[-1]
