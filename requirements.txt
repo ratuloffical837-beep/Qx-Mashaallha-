@@ -1,0 +1,6 @@
+flask
+websockets
+asyncio
+python-dotenv
+pandas
+numpy
