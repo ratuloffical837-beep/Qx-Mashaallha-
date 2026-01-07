@@ -1,7 +1,0 @@
-flask
-gunicorn
-websockets
-asyncio
-python-dotenv
-pandas
-numpy
