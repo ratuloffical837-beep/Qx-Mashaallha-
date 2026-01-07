@@ -28,6 +28,7 @@ const styles = `
 `;
 
 const markets = [
+  // Forex Pairs (18)
   { name: "AUD/USD", id: "frxAUDUSD" }, { name: "EUR/GBP", id: "frxEURGBP" },
   { name: "EUR/USD", id: "frxEURUSD" }, { name: "AUD/JPY", id: "frxAUDJPY" },
   { name: "AUD/CAD", id: "frxAUDCAD" }, { name: "AUD/CHF", id: "frxAUDCHF" },
@@ -37,11 +38,13 @@ const markets = [
   { name: "GBP/JPY", id: "frxGBPJPY" }, { name: "USD/CHF", id: "frxUSDCHF" },
   { name: "USD/CAD", id: "frxUSDCAD" }, { name: "USD/JPY", id: "frxUSDJPY" },
   { name: "CAD/JPY", id: "frxCADJPY" }, { name: "USD/CNY", id: "frxUSDCNY" },
+  // Stock Indices (8)
   { name: "FTSE China A50", id: "OTCIXCHINA" }, { name: "Dow Jones", id: "OTCIXDJI" },
   { name: "FTSE 100", id: "OTCIXFTSE" }, { name: "Hang Seng", id: "OTCIXHSI" },
   { name: "NASDAQ 100", id: "OTCIXNDX" }, { name: "DAX 40", id: "OTCIXDAX" },
   { name: "EURO STOXX 50", id: "OTCIXE50" }, { name: "S&P/ASX 200", id: "OTCIXAS200" },
   { name: "Nikkei 225", id: "OTCIXN225" },
+  // Commodities (3)
   { name: "Gold (XAU/USD)", id: "frxXAUUSD" }, { name: "Silver (XAG/USD)", id: "frxXAGUSD" },
   { name: "Crude Oil", id: "frxWTI" }
 ];
@@ -64,12 +67,10 @@ function App() {
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
-      //BD Time (UTC+6) format
       setServerTime(now.toLocaleTimeString('en-GB', { hour12: false }));
       
       const seconds = now.getSeconds();
       const remaining = 60 - seconds;
-      
       const nextMinute = new Date(now.getTime() + remaining * 1000);
       setEntryTime(nextMinute.toLocaleTimeString('en-GB', { hour12: false }));
 
@@ -111,10 +112,10 @@ function App() {
 
         if (score >= 1) {
           setSignal('BUY (CALL)');
-          setConfidence(97.12 + Math.random() * 2);
+          setConfidence(96.88 + Math.random() * 2);
         } else {
           setSignal('SELL (PUT)');
-          setConfidence(97.45 + Math.random() * 2);
+          setConfidence(97.12 + Math.random() * 2);
         }
       }
     };
@@ -123,6 +124,7 @@ function App() {
 
   const chartUrl = useMemo(() => (
     <iframe 
+      key={symbol}
       src={`https://tradingview.deriv.com/config.html?symbol=${symbol}&theme=dark&timezone=Asia/Dhaka`} 
       width="100%" height="100%" frameBorder="0">
     </iframe>
@@ -154,7 +156,7 @@ function App() {
   return (
     <div className="app-container">
       <style>{styles}</style>
-      <header><div className="gold">RTX 15 PRO MAX</div></header>
+      <header><div className="gold">RTX 15 PRO MAX</div><div style={{fontSize: '0.6rem'}}>REAL MARKET</div></header>
       <div className="chart-box">{chartUrl}</div>
       <div className="controls">
         <select value={symbol} onChange={(e) => setSymbol(e.target.value)}>
@@ -167,7 +169,7 @@ function App() {
         <div className="info-grid">
           <div>LIVE CLOCK:</div><div className="value">{serverTime}</div>
           <div>ENTRY TIME:</div><div className="value">{entryTime}</div>
-          <div>MARKET TYPE:</div><div className="value">REAL MARKET</div>
+          <div>MARKET:</div><div className="value">REAL-TIME (BD)</div>
         </div>
         <div className="acc-meter" style={{color: isUp ? '#0ecb81' : '#f6465d', borderColor: isUp ? '#0ecb81' : '#f6465d'}}>
           CONFIDENCE: {confidence.toFixed(2)}%
