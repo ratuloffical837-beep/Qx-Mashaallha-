@@ -1,0 +1,10 @@
+flask
+flask-socketio
+playwright
+playwright-stealth
+opencv-python-headless
+numpy
+requests
+python-dotenv
+eventlet
+gunicorn
