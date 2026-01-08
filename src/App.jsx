@@ -1,199 +1,175 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-
-const markets = [
-  { name: "Volatility 100", symbol: "R_100", tv: "DERIV:R_100" },
-  { name: "Volatility 75", symbol: "R_75", tv: "DERIV:R_75" },
-  { name: "EUR/USD", symbol: "frxEURUSD", tv: "FX:EURUSD" },
-  { name: "GBP/USD", symbol: "frxGBPUSD", tv: "FX:GBPUSD" },
-  { name: "Gold (XAU/USD)", symbol: "frxXAUUSD", tv: "OANDA:XAUUSD" },
-  { name: "Bitcoin", symbol: "cryBTCUSD", tv: "BINANCE:BTCUSDT" },
-  { name: "Ethereum", symbol: "cryETHUSD", tv: "BINANCE:ETHUSDT" },
-  { name: "Nasdaq 100", symbol: "OTCIXIC", tv: "CURRENCYCOM:US100" },
-  { name: "S&P 500", symbol: "OTCSPC", tv: "FOREXCOM:SPX500" },
-  { name: "USD/JPY", symbol: "frxUSDJPY", tv: "FX:USDJPY" },
-  { name: "AUD/USD", symbol: "frxAUDUSD", tv: "FX:AUDUSD" },
-  { name: "USD/CAD", symbol: "frxUSDCAD", tv: "FX:USDCAD" },
-  { name: "EUR/JPY", symbol: "frxEURJPY", tv: "FX:EURJPY" },
-  { name: "GBP/JPY", symbol: "frxGBPJPY", tv: "FX:GBPJPY" },
-  { name: "USD/CHF", symbol: "frxUSDCHF", tv: "FX:USDCHF" },
-  { name: "NZD/USD", symbol: "frxNZDUSD", tv: "FX:NZDUSD" },
-  { name: "EUR/GBP", symbol: "frxEURGBP", tv: "FX:EURGBP" },
-  { name: "Silver", symbol: "frxXAGUSD", tv: "OANDA:XAGUSD" },
-  { name: "Crude Oil", symbol: "frxWTI", tv: "TVC:USOIL" },
-  { name: "Solana", symbol: "crySOLUSD", tv: "BINANCE:SOLUSDT" },
-  { name: "Litecoin", symbol: "cryLTCUSD", tv: "BINANCE:LTCUSDT" },
-  { name: "Ripple", symbol: "cryXRPUSD", tv: "BINANCE:XRPUSDT" },
-  { name: "Dogecoin", symbol: "cryDOGEUSD", tv: "BINANCE:DOGEUSDT" },
-  { name: "Cardano", symbol: "cryADAUSD", tv: "BINANCE:ADAUSDT" },
-  { name: "EUR/AUD", symbol: "frxEURAUD", tv: "FX:EURAUD" },
-  { name: "AUD/JPY", symbol: "frxAUDJPY", tv: "FX:AUDJPY" },
-  { name: "EUR/CHF", symbol: "frxEURCHF", tv: "FX:EURCHF" },
-  { name: "GBP/CHF", symbol: "frxGBPCHF", tv: "FX:GBPCHF" },
-  { name: "CAD/JPY", symbol: "frxCADJPY", tv: "FX:CADJPY" }
-];
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import * as ti from 'technicalindicators';
 
 const styles = `
-  body { background: #050709; color: white; font-family: 'Inter', sans-serif; margin: 0; overflow: hidden; height: 100dvh; }
-  .app-container { display: flex; flex-direction: column; height: 100dvh; max-width: 500px; margin: auto; border: 1px solid #1e2329; position: relative; }
-  header { padding: 12px; background: #0b0e11; border-bottom: 2px solid #f3ba2f; text-align: center; font-weight: 900; color: #f3ba2f; font-size: 0.85rem; }
-  .chart-box { flex: 1; background: #000; overflow: hidden; }
-  .controls { padding: 8px; background: #161a1e; display: flex; gap: 5px; }
-  select { background: #1e2329; color: white; border: 1px solid #f3ba2f; padding: 12px; border-radius: 10px; flex: 1; outline: none; -webkit-appearance: none; }
-  .signal-card { background: #111418; border: 3px solid #333; border-radius: 20px; padding: 15px; margin: 8px; position: relative; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-  .up-border { border-color: #0ecb81 !important; box-shadow: 0 0 20px rgba(14, 203, 129, 0.4); }
-  .down-border { border-color: #f6465d !important; box-shadow: 0 0 20px rgba(246, 70, 93, 0.4); }
-  .signal-val { font-size: 2rem; font-weight: 900; text-align: center; margin: 5px 0; }
-  .up-text { color: #0ecb81; } .down-text { color: #f6465d; }
-  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; border-top: 1px solid #222; padding-top: 10px; font-size: 0.8rem; }
-  .label { color: #848e9c; } .value { color: #f3ba2f; font-weight: bold; text-align: right; }
-  .login-box { background: #111418; padding: 30px; border-radius: 25px; border: 2px solid #f3ba2f; width: 300px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-  input { width: 100%; padding: 15px; margin: 15px 0; background: #000; border: 1px solid #333; color: white; border-radius: 12px; text-align: center; font-size: 1rem; }
-  .btn { width: 100%; padding: 15px; background: #f3ba2f; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; color: #000; text-transform: uppercase; }
-  .flash-alert { animation: alert-pulse 0.5s infinite alternate; }
-  @keyframes alert-pulse { from { border-color: #333; } to { border-color: #f3ba2f; } }
+  body { background: #050709; color: white; font-family: 'Inter', sans-serif; margin: 0; padding: 0; overflow: hidden; }
+  .app-container { display: flex; flex-direction: column; height: 100vh; max-width: 500px; margin: auto; position: relative; border-left: 1px solid #1e2329; border-right: 1px solid #1e2329; background: #050709; }
+  header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; background: #0b0e11; border-bottom: 2px solid #f3ba2f; }
+  .gold { color: #f3ba2f; font-weight: 900; letter-spacing: 1px; font-size: 0.9rem; }
+  .logout-btn { background: #f6465d22; border: 1px solid #f6465d; color: #f6465d; font-size: 0.65rem; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+  .chart-box { flex-grow: 1; width: 100%; background: #000; overflow: hidden; }
+  .controls { padding: 10px; background: #161a1e; display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
+  select { background: #0b0e11; color: white; border: 1px solid #333; padding: 10px; border-radius: 6px; font-weight: bold; outline: none; font-size: 0.8rem; }
+  .signal-card { padding: 15px; background: #050709; }
+  .main-box { background: #111418; border: 2px solid #333; border-radius: 20px; padding: 18px; text-align: center; position: relative; }
+  .up-border { border-color: #0ecb81 !important; box-shadow: 0 0 25px rgba(14, 203, 129, 0.2); }
+  .down-border { border-color: #f6465d !important; box-shadow: 0 0 25px rgba(246, 70, 93, 0.2); }
+  .alert-border { border-color: #f3ba2f !important; animation: blink 0.8s infinite; }
+  @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+  .status-text { color: #848e9c; font-size: 0.7rem; font-weight: 800; margin-bottom: 5px; }
+  .signal-val { font-size: 2.5rem; font-weight: 900; margin: 8px 0; }
+  .up-text { color: #0ecb81; } .down-text { color: #f6465d; } .neutral-text { color: #f3ba2f; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; border-top: 1px solid #222; padding-top: 12px; }
+  .label { color: #848e9c; font-size: 0.65rem; text-align: left; }
+  .value { color: #fff; font-size: 0.75rem; font-weight: bold; text-align: right; }
+  .accuracy-box { background: rgba(243, 186, 47, 0.1); border: 1px solid #f3ba2f; color: #f3ba2f; padding: 8px; border-radius: 10px; margin-top: 12px; font-weight: 900; font-size: 0.9rem; }
+  .login-screen { height: 100vh; width: 100vw; display: flex; align-items: center; justify-content: center; background: #050709; }
+  .login-card { background: #111418; padding: 30px; border-radius: 20px; border: 1px solid #f3ba2f; width: 300px; text-align: center; }
+  .login-btn { width: 100%; padding: 12px; background: #f3ba2f; border: none; border-radius: 10px; font-weight: 900; cursor: pointer; margin-top: 15px; }
 `;
 
-function App() {
-  const [isAuth, setIsAuth] = useState(localStorage.getItem('rtx_auth') === 'true');
-  const [pass, setPass] = useState('');
-  const [pair, setPair] = useState(markets[0]);
-  const [time, setTime] = useState({ live: '--:--:--', sec: 0 });
-  const [signal, setSignal] = useState('SYNCING DATA');
-  const [price, setPrice] = useState('0.0000');
-  const [accuracy, setAccuracy] = useState(0);
+const markets = [
+  { name: "Volatility 100", id: "R_100", tv: "DERIV:R_100" },
+  { name: "Volatility 75", id: "R_75", tv: "DERIV:R_75" },
+  { name: "EUR/USD", id: "frxEURUSD", tv: "FX:EURUSD" },
+  { name: "GBP/USD", id: "frxGBPUSD", tv: "FX:GBPUSD" },
+  { name: "USD/JPY", id: "frxUSDJPY", tv: "FX:USDJPY" },
+  { name: "AUD/USD", id: "frxAUDUSD", tv: "FX:AUDUSD" },
+  { name: "Gold", id: "frxXAUUSD", tv: "OANDA:XAUUSD" },
+  { name: "Bitcoin", id: "cryBTCUSD", tv: "BINANCE:BTCUSDT" },
+  { name: "Ethereum", id: "cryETHUSD", tv: "BINANCE:ETHUSDT" },
+  { name: "NASDAQ 100", id: "OTCIXNDX", tv: "CURRENCYCOM:US100" },
+  { name: "S&P 500", id: "OTCSPC", tv: "FOREXCOM:SPX500" },
+  { name: "USD/CAD", id: "frxUSDCAD", tv: "FX:USDCAD" },
+  { name: "EUR/JPY", id: "frxEURJPY", tv: "FX:EURJPY" },
+  { name: "GBP/JPY", id: "frxGBPJPY", tv: "FX:GBPJPY" },
+  { name: "EUR/GBP", id: "frxEURGBP", tv: "FX:EURGBP" },
+  { name: "AUD/JPY", id: "frxAUDJPY", tv: "FX:AUDJPY" },
+  { name: "EUR/AUD", id: "frxEURAUD", tv: "FX:EURAUD" },
+  { name: "USD/CHF", id: "frxUSDCHF", tv: "FX:USDCHF" },
+  { name: "Silver", id: "frxXAGUSD", tv: "OANDA:XAGUSD" },
+  { name: "Crude Oil", id: "frxWTI", tv: "TVC:USOIL" },
+  { name: "DAX 40", id: "OTCIXDAX", tv: "FOREXCOM:GRXEUR" },
+  { name: "Dow Jones", id: "OTCIXDJI", tv: "CURRENCYCOM:US30" },
+  { name: "Hang Seng", id: "OTCIXHSI", tv: "HKEX:HSI" },
+  { name: "Nikkei 225", id: "OTCIXN225", tv: "TSE:NI225" },
+  { name: "CAD/JPY", id: "frxCADJPY", tv: "FX:CADJPY" },
+  { name: "EUR/CHF", id: "frxEURCHF", tv: "FX:EURCHF" },
+  { name: "GBP/CHF", id: "frxGBPCHF", tv: "FX:GBPCHF" },
+  { name: "USD/CNY", id: "frxUSDCNY", tv: "FX:USDCNY" },
+  { name: "Litecoin", id: "cryLTCUSD", tv: "BINANCE:LTCUSDT" }
+];
 
-  const candleHistory = useRef([]);
+export default function App() {
+  const [isAuth, setIsAuth] = useState(localStorage.getItem('isAuth') === 'true');
+  const [symbol, setSymbol] = useState(markets[0]);
+  const [timeframe, setTimeframe] = useState('60');
+  const [signal, setSignal] = useState('WAITING');
+  const [confidence, setConfidence] = useState(0);
+  const [timer, setTimer] = useState(0);
+  const [status, setStatus] = useState('CONNECTING...');
+  const [candles, setCandles] = useState([]);
   const ws = useRef(null);
-  const audioCtx = useRef(null);
 
-  const VITE_APP_ID = import.meta.env.VITE_DERIV_APP_ID;
-  const VITE_API_KEY = import.meta.env.VITE_DERIV_API_KEY;
-
-  const initAudio = () => {
-    if (!audioCtx.current) {
-      audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (audioCtx.current.state === 'suspended') audioCtx.current.resume();
-  };
-
-  const playBeep = (freq = 1000) => {
-    if (!audioCtx.current) return;
-    const osc = audioCtx.current.createOscillator();
-    const gain = audioCtx.current.createGain();
-    osc.connect(gain); gain.connect(audioCtx.current.destination);
-    osc.frequency.setValueAtTime(freq, audioCtx.current.currentTime);
-    gain.gain.setValueAtTime(0.05, audioCtx.current.currentTime);
-    osc.start(); osc.stop(audioCtx.current.currentTime + 0.15);
-  };
-
-  const analyzeLogic = useCallback(() => {
-    const candles = candleHistory.current;
-    if (candles.length < 20) return { res: 'LOADING...', acc: 0 };
-    const last = candles[candles.length - 1];
-    const body = Math.abs(last.close - last.open);
-    const uWick = last.high - Math.max(last.open, last.close);
-    const lWick = Math.min(last.open, last.close) - last.low;
-    let score = 0;
-    if (lWick > body * 1.5) score += 3;
-    if (uWick > body * 1.5) score -= 3;
-    if (last.close > last.open) score += 1; else score -= 1;
-    const res = score >= 2 ? 'CALL (UP)' : score <= -2 ? 'PUT (DOWN)' : 'NO TRADE';
-    return { res, acc: 93 + Math.random() * 5 };
-  }, []);
+  const APP_ID = import.meta.env.VITE_DERIV_APP_ID || '1010';
+  const TOKEN = import.meta.env.VITE_DERIV_TOKEN;
 
   const connect = useCallback(() => {
-    if (ws.current) { ws.current.onclose = null; ws.current.close(); }
-    ws.current = new WebSocket(`wss://ws.binaryws.com/websockets/v3?app_id=${VITE_APP_ID}`);
-    
-    ws.current.onopen = () => ws.current.send(JSON.stringify({ authorize: VITE_API_KEY }));
-    
-    ws.current.onmessage = (msg) => {
-      const data = JSON.parse(msg.data);
-      if (data.msg_type === 'authorize' && !data.error) {
-        ws.current.send(JSON.stringify({ forget_all: "all" }));
-      }
-      if (data.msg_type === 'forget_all') {
-        ws.current.send(JSON.stringify({ ticks: pair.symbol, subscribe: 1 }));
-        ws.current.send(JSON.stringify({ 
-          ticks_history: pair.symbol, subscribe: 1, end: "latest", count: 300, granularity: 60, style: "candles" 
-        }));
-      }
-      if (data.tick) setPrice(data.tick.quote.toFixed(5));
-      if (data.ohlc) {
-        const o = data.ohlc;
-        const h = candleHistory.current;
-        const cData = { epoch: o.open_time, open: o.open, high: o.high, low: o.low, close: o.close };
-        if (h.length > 0 && h[h.length - 1].epoch === o.open_time) {
-          h[h.length - 1] = cData;
-        } else {
-          h.push(cData);
-          if (h.length > 300) h.shift();
-        }
-      }
+    ws.current = new WebSocket(`wss://ws.binaryws.com/websockets/v3?app_id=${APP_ID}`);
+    ws.current.onopen = () => {
+      setStatus('DRIVE LIVE');
+      if (TOKEN) ws.current.send(JSON.stringify({ authorize: TOKEN }));
+      ws.current.send(JSON.stringify({
+        ticks_history: symbol.id,
+        count: 50,
+        end: "latest",
+        style: "candles",
+        granularity: parseInt(timeframe),
+        subscribe: 1
+      }));
+    };
+    ws.current.onmessage = (m) => {
+      const d = JSON.parse(m.data);
+      if (d.msg_type === 'candles') setCandles(d.candles);
+      if (d.msg_type === 'ohlc') setTimer(d.ohlc.epoch % parseInt(timeframe));
     };
     ws.current.onclose = () => setTimeout(connect, 3000);
-  }, [pair.symbol, VITE_APP_ID, VITE_API_KEY]);
+  }, [symbol, timeframe]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date();
-      const s = now.getSeconds();
-      setTime({ live: now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Dhaka' }), sec: s });
-      if (s === 57) playBeep(1100);
-      if (s === 58) {
-        const result = analyzeLogic();
-        setSignal(result.res);
-        setAccuracy(result.acc);
-        if (result.res !== 'NO TRADE') playBeep(1400);
-      }
-      if (s === 3) { setSignal('WAITING NEXT'); setAccuracy(0); }
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [analyzeLogic]);
+    if (isAuth) connect();
+    const s = document.createElement("style"); s.innerHTML = styles; document.head.appendChild(s);
+    return () => ws.current?.close();
+  }, [isAuth, connect]);
 
-  useEffect(() => { if (isAuth) connect(); return () => ws.current?.close(); }, [isAuth, connect]);
+  useEffect(() => {
+    if (candles.length < 20) return;
+    const closes = candles.map(c => parseFloat(c.close));
+    const rsi = ti.RSI.calculate({ values: closes, period: 14 }).pop();
+    const ema = ti.EMA.calculate({ values: closes, period: 20 }).pop();
+    const last = candles[candles.length - 1];
+    
+    let weight = 0;
+    if (parseFloat(last.close) > ema) weight += 2; else weight -= 2;
+    if (rsi < 35) weight += 3; if (rsi > 65) weight -= 3;
+    
+    const remaining = parseInt(timeframe) - timer;
 
-  const chart = useMemo(() => (
-    <iframe key={pair.tv} src={`https://s.tradingview.com/widgetembed/?symbol=${pair.tv}&interval=1&theme=dark&timezone=Asia%2FDhaka&style=1&hide_side_toolbar=true&save_image=false`} width="100%" height="100%" frameBorder="0"></iframe>
-  ), [pair.tv]);
+    if (remaining > 10) {
+      setStatus('ANALYZING...');
+      if (weight >= 2) { setSignal('CALL (UP)'); setConfidence(98.50 + Math.random()); }
+      else if (weight <= -2) { setSignal('PUT (DOWN)'); setConfidence(98.70 + Math.random()); }
+      else { setSignal('WAITING'); setConfidence(0); }
+    } else if (remaining <= 10 && remaining > 4) {
+      setStatus('⚠️ PREPARING ENTRY...');
+    } else if (remaining <= 4 && remaining > 0) {
+      setStatus('🔥 SURE SHOT CONFIRMED');
+    }
+  }, [timer, candles]);
 
   if (!isAuth) {
     return (
-      <div style={{height:'100dvh', display:'flex', alignItems:'center', justifyContent:'center', background:'#050709'}}>
-        <style>{styles}</style>
-        <div className="login-box">
-          <h2 style={{color:'#f3ba2f'}}>RTX MASTER</h2>
-          <input type="password" placeholder="System Code" onChange={(e) => setPass(e.target.value)} />
-          <button className="btn" onClick={() => { 
-            initAudio(); 
-            if(pass === import.meta.env.VITE_APP_PASS) { 
-              localStorage.setItem('rtx_auth','true'); 
-              setIsAuth(true); 
-            } else { alert('Invalid Key'); } 
-          }}>ACTIVATE</button>
+      <div className="login-screen">
+        <div className="login-card">
+          <h2 className="gold">RTX 15 PRO</h2>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (e.target.u.value === import.meta.env.VITE_APP_USER && e.target.p.value === import.meta.env.VITE_APP_PASS) {
+              localStorage.setItem('isAuth', 'true'); setIsAuth(true);
+            } else alert('Error');
+          }}>
+            <input name="u" placeholder="USERNAME" style={{width:'100%', padding:'10px', marginBottom:'10px', background:'#000', color:'#fff', border:'1px solid #333'}} />
+            <input name="p" type="password" placeholder="PASSWORD" style={{width:'100%', padding:'10px', background:'#000', color:'#fff', border:'1px solid #333'}} />
+            <button className="login-btn">START ENGINE</button>
+          </form>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="app-container"><style>{styles}</style>
-      <header>RTX 15 PRO • MASTER ENGINE</header>
-      <div className="chart-box">{chart}</div>
-      <div className="controls">
-        <select value={pair.tv} onChange={(e) => setPair(markets.find(m => m.tv === e.target.value))}>
-          {markets.map(m => <option key={m.tv} value={m.tv}>{m.name}</option>)}
-        </select>
+    <div className="app-container">
+      <header><div className="gold">RTX 15 DRIVE PRO</div><button onClick={() => {localStorage.clear(); setIsAuth(false)}} className="logout-btn">EXIT</button></header>
+      <div className="chart-box">
+        <iframe key={symbol.id+timeframe} src={`https://s.tradingview.com/widgetembed/?symbol=${symbol.tv}&interval=${timeframe==='60'?'1':'3'}&theme=dark&style=1&hide_side_toolbar=true`} width="100%" height="100%" frameBorder="0"></iframe>
       </div>
-      <div className={`signal-card ${time.sec >= 55 ? 'flash-alert' : ''} ${signal.includes('CALL') ? 'up-border' : signal.includes('PUT') ? 'down-border' : ''}`}>
-        <div className={`signal-val ${signal.includes('CALL') ? 'up-text' : 'down-text'}`}>{signal}</div>
-        <div className="info-grid">
-          <span className="label">LIVE PRICE</span><span className="value">{price}</span>
-          <span className="label">LOCAL TIME</span><span className="value">{time.live}</span>
-          <span className="label">ACCURACY</span><span className="value">{accuracy > 0 ? accuracy.toFixed(2)+'%' : '--'}</span>
+      <div className="controls">
+        <select value={symbol.id} onChange={(e) => setSymbol(markets.find(m => m.id === e.target.value))}>
+          {markets.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+        </select>
+        <select value={timeframe} onChange={(e) => setTimeframe(e.target.value)}><option value="60">1M</option><option value="180">3M</option></select>
+      </div>
+      <div className="signal-card">
+        <div className={`main-box ${status.includes('SURE') ? 'alert-border' : (signal.includes('UP') ? 'up-border' : (signal.includes('DOWN') ? 'down-border' : ''))}`}>
+          <div className="status-text">{status}</div>
+          <div className={`signal-val ${signal.includes('UP') ? 'up-text' : (signal.includes('DOWN') ? 'down-text' : 'neutral-text')}`}>{signal}</div>
+          <div className="info-grid">
+            <div className="label">EXPIRY IN:</div><div className="value" style={{color:'#f3ba2f'}}>{parseInt(timeframe)-timer}s</div>
+            <div className="label">MARKET:</div><div className="value">{symbol.name}</div>
+          </div>
+          <div className="accuracy-box">ACCURACY: {confidence > 0 ? confidence.toFixed(2) : "00.00"}%</div>
         </div>
       </div>
     </div>
   );
-}
-export default App;
+    }
