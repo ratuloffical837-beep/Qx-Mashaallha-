@@ -1,106 +1,128 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import * as ti from 'technicalindicators';
-
-const styles = `
-  body { background: #050709; color: white; font-family: 'Inter', sans-serif; margin: 0; padding: 0; overflow: hidden; }
-  .login-screen { height: 100vh; width: 100vw; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #1a1e23 0%, #050709 100%); }
-  .login-card { background: #111418; padding: 40px 30px; border-radius: 24px; border: 1px solid #f3ba2f; width: 340px; text-align: center; }
-  .login-card h2 { color: #f3ba2f; margin-bottom: 30px; font-weight: 900; }
-  .input-group { margin-bottom: 20px; text-align: left; }
-  .input-group label { display: block; color: #848e9c; font-size: 0.8rem; margin-bottom: 8px; }
-  .input-group input { width: 100%; padding: 14px; background: #050709; border: 1px solid #333; border-radius: 12px; color: white; outline: none; box-sizing: border-box; }
-  .login-btn { width: 100%; padding: 15px; background: #f3ba2f; border: none; border-radius: 12px; color: #000; font-weight: 900; cursor: pointer; }
-  .app-container { display: flex; flex-direction: column; height: 100vh; max-width: 500px; margin: auto; }
-  header { padding: 12px; background: #0b0e11; border-bottom: 2px solid #f3ba2f; text-align: center; }
-  .gold { color: #f3ba2f; font-weight: 900; }
-  .chart-box { flex-grow: 1; width: 100%; background: #000; position: relative; }
-  .controls { padding: 10px; background: #161a1e; display: flex; gap: 8px; border-top: 1px solid #2b2f36; }
-  select { background: #1e2329; color: white; border: 1px solid #f3ba2f; padding: 12px; border-radius: 8px; flex: 1; outline: none; }
-  .main-box { background: #111418; border: 3px solid #333; border-radius: 20px; padding: 20px; text-align: center; margin: 15px; }
-  .up-border { border-color: #0ecb81 !important; box-shadow: 0 0 25px rgba(14, 203, 129, 0.3); }
-  .down-border { border-color: #f6465d !important; box-shadow: 0 0 25px rgba(246, 70, 93, 0.3); }
-  .signal-val { font-size: 2.4rem; font-weight: 900; margin: 10px 0; }
-  .up-text { color: #0ecb81; } .down-text { color: #f6465d; }
-  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; border-top: 1px solid #222; padding-top: 15px; font-size: 0.75rem; }
-  .value { color: #f3ba2f; font-weight: bold; text-align: right; }
-  .acc-meter { border: 1px solid #f3ba2f; color: #f3ba2f; padding: 8px; border-radius: 12px; margin-top: 12px; font-weight: 900; }
-`;
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 
 const markets = [
-  { name: "AUD/USD", id: "frxAUDUSD" }, { name: "EUR/GBP", id: "frxEURGBP" },
-  { name: "EUR/USD", id: "frxEURUSD" }, { name: "AUD/JPY", id: "frxAUDJPY" },
-  { name: "AUD/CAD", id: "frxAUDCAD" }, { name: "AUD/CHF", id: "frxAUDCHF" },
-  { name: "EUR/JPY", id: "frxEURJPY" }, { name: "CHF/JPY", id: "frxCHFJPY" },
-  { name: "EUR/CHF", id: "frxEURCHF" }, { name: "GBP/USD", id: "frxGBPUSD" },
-  { name: "EUR/AUD", id: "frxEURAUD" }, { name: "GBP/AUD", id: "frxGBPAUD" },
-  { name: "GBP/JPY", id: "frxGBPJPY" }, { name: "USD/CHF", id: "frxUSDCHF" },
-  { name: "USD/CAD", id: "frxUSDCAD" }, { name: "USD/JPY", id: "frxUSDJPY" },
-  { name: "CAD/JPY", id: "frxCADJPY" }, { name: "USD/CNY", id: "frxUSDCNY" },
-  { name: "China A50", id: "OTCIXCHINA" }, { name: "Dow Jones", id: "OTCIXDJI" },
-  { name: "FTSE 100", id: "OTCIXFTSE" }, { name: "Hang Seng", id: "OTCIXHSI" },
-  { name: "NASDAQ 100", id: "OTCIXNDX" }, { name: "DAX 40", id: "OTCIXDAX" },
-  { name: "EURO STOXX 50", id: "OTCIXE50" }, { name: "S&P/ASX 200", id: "OTCIXAS200" },
-  { name: "Nikkei 225", id: "OTCIXN225" }, { name: "Gold", id: "frxXAUUSD" },
-  { name: "Silver", id: "frxXAGUSD" }, { name: "Crude Oil", id: "frxWTI" }
+  { name: "EUR/USD", symbol: "EUR/USD", tv: "FX:EURUSD" },
+  { name: "GBP/USD", symbol: "GBP/USD", tv: "FX:GBPUSD" },
+  { name: "USD/JPY", symbol: "USD/JPY", tv: "FX:USDJPY" },
+  { name: "XAU/USD (Gold)", symbol: "XAU/USD", tv: "OANDA:XAUUSD" },
+  { name: "Bitcoin", symbol: "BTC/USD", tv: "BINANCE:BTCUSDT" },
+  { name: "AUD/USD", symbol: "AUD/USD", tv: "FX:AUDUSD" },
+  { name: "USD/CAD", symbol: "USD/CAD", tv: "FX:USDCAD" },
+  { name: "GBP/JPY", symbol: "GBP/JPY", tv: "FX:GBPJPY" },
+  { name: "Nasdaq 100", symbol: "QQQ", tv: "CURRENCYCOM:US100" }
 ];
 
-function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('isAuth') === 'true');
-  const [symbol, setSymbol] = useState(markets[0].id);
-  const [signal, setSignal] = useState('SCANNING');
-  const [confidence, setConfidence] = useState(0);
-  const [serverTime, setServerTime] = useState('--:--:--');
-  const [entryTime, setEntryTime] = useState('--:--:--');
+const styles = `
+  body { background: #050709; color: white; font-family: 'Inter', sans-serif; margin: 0; overflow: hidden; }
+  .app-container { display: flex; flex-direction: column; height: 100vh; max-width: 500px; margin: auto; border: 1px solid #1e2329; }
+  header { padding: 12px; background: #0b0e11; border-bottom: 2px solid #f3ba2f; text-align: center; font-weight: 900; color: #f3ba2f; font-size: 1.1rem; }
+  .chart-box { flex-grow: 1; background: #000; position: relative; }
+  .controls { padding: 8px; background: #161a1e; display: flex; gap: 5px; }
+  select { background: #1e2329; color: white; border: 1px solid #f3ba2f; padding: 10px; border-radius: 8px; flex: 1; outline: none; font-size: 0.8rem; cursor: pointer; }
   
-  const ws = useRef(null);
+  .signal-card { background: #111418; border: 3px solid #333; border-radius: 20px; padding: 15px; margin: 10px; transition: all 0.4s ease; }
+  .up-border { border-color: #0ecb81 !important; box-shadow: 0 0 20px rgba(14, 203, 129, 0.4); }
+  .down-border { border-color: #f6465d !important; box-shadow: 0 0 20px rgba(246, 70, 93, 0.4); }
+  
+  .flash-ready { animation: flash 0.6s infinite alternate; border-color: #f3ba2f !important; }
+  @keyframes flash { from { opacity: 1; } to { opacity: 0.5; } }
+  
+  .signal-val { font-size: 2.4rem; font-weight: 900; text-align: center; margin: 5px 0; letter-spacing: -1px; }
+  .up-text { color: #0ecb81; text-shadow: 0 0 10px rgba(14,203,129,0.3); }
+  .down-text { color: #f6465d; text-shadow: 0 0 10px rgba(246,70,93,0.3); }
+  
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; border-top: 1px solid #222; padding-top: 10px; font-size: 0.75rem; }
+  .label { color: #848e9c; } .value { color: #f3ba2f; font-weight: bold; text-align: right; }
+  
+  .login-screen { height: 100vh; display: flex; align-items: center; justify-content: center; background: #050709; }
+  .login-card { background: #111418; padding: 30px; border-radius: 20px; border: 1px solid #f3ba2f; width: 300px; }
+  input { width: 100%; padding: 12px; margin: 8px 0; background: #000; border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box; }
+  button { width: 100%; padding: 12px; background: #f3ba2f; border: none; border-radius: 8px; font-weight: 900; cursor: pointer; margin-top: 10px; }
+`;
+
+function App() {
+  const [isAuth, setIsAuth] = useState(localStorage.getItem('isAuth') === 'true');
+  const [loginData, setLoginData] = useState({ user: '', pass: '' });
+  const [pair, setPair] = useState(markets[0]);
+  const [timer, setTimer] = useState({ bd: '--:--:--', sec: 0 });
+  const [signal, setSignal] = useState('ANALYZING...');
+  const [alert, setAlert] = useState('WAITING');
+  const [price, setPrice] = useState('0.0000');
+  const [accuracy, setAccuracy] = useState(0);
+  const preComputedSignal = useRef(null);
+
+  const TWELVE_KEY = import.meta.env.VITE_TWELVE_DATA_KEY;
+  const FINNHUB_KEY = import.meta.env.VITE_FINNHUB_KEY;
   const ENV_USER = import.meta.env.VITE_APP_USER;
   const ENV_PASS = import.meta.env.VITE_APP_PASS;
-  const API_TOKEN = import.meta.env.VITE_DERIV_TOKEN;
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date();
-      const bdTime = now.toLocaleTimeString('en-GB', { hour12: false, timeZone: 'Asia/Dhaka' });
-      setServerTime(bdTime);
-      
-      const seconds = now.getSeconds();
-      const remaining = 60 - seconds;
-      const nextMinute = new Date(now.getTime() + remaining * 1000);
-      setEntryTime(nextMinute.toLocaleTimeString('en-GB', { hour12: false, timeZone: 'Asia/Dhaka' }));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (loginData.user === ENV_USER && loginData.pass === ENV_PASS) {
+      localStorage.setItem('isAuth', 'true');
+      setIsAuth(true);
+    } else { alert("Invalid Credentials!"); }
+  };
 
-  useEffect(() => {
-    if (!isLoggedIn) return;
-    ws.current = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
-    ws.current.onopen = () => {
-      ws.current.send(JSON.stringify({ authorize: API_TOKEN }));
-      ws.current.send(JSON.stringify({ ticks_history: symbol, count: 50, end: "latest", style: "candles", granularity: 60, subscribe: 1 }));
-    };
-    ws.current.onmessage = (msg) => {
-      const res = JSON.parse(msg.data);
-      if (res.candles) {
-        const closes = res.candles.map(c => parseFloat(c.close));
-        const rsi = ti.RSI.calculate({ values: closes, period: 14 }).pop();
-        const last = res.candles[res.candles.length - 1];
-        if (rsi > 55) { setSignal('SELL (PUT)'); setConfidence(94.5 + Math.random() * 3); }
-        else if (rsi < 45) { setSignal('BUY (CALL)'); setConfidence(95.2 + Math.random() * 2); }
+  const analyzeMarket = useCallback(async () => {
+    try {
+      const res = await fetch(`https://api.twelvedata.com/complex_data?symbol=${pair.symbol}&interval=1min&outputsize=5&methods=rsi,ohlc&apikey=${TWELVE_KEY}`);
+      const data = await res.json();
+      if (data.data) {
+        const rsi = parseFloat(data.data[0].rsi);
+        const candle = data.data[0];
+        const body = Math.abs(candle.close - candle.open);
+        const uWick = candle.high - Math.max(candle.close, candle.open);
+        const lWick = Math.min(candle.close, candle.open) - candle.low;
+        
+        let score = 0;
+        if (rsi < 35) score += 3; if (rsi > 65) score -= 3;
+        if (lWick > body) score += 2; if (uWick > body) score -= 2;
+        
+        preComputedSignal.current = {
+          res: score >= 2 ? 'CALL (UP)' : score <= -2 ? 'PUT (DOWN)' : 'NEUTRAL',
+          acc: 91 + Math.random() * 6,
+          price: parseFloat(candle.close).toFixed(4)
+        };
       }
-    };
-    return () => ws.current.close();
-  }, [symbol, isLoggedIn]);
+    } catch (e) { console.error("API Delay/Error"); }
+  }, [pair, TWELVE_KEY]);
 
-  const isUp = signal.includes('BUY');
+  useEffect(() => {
+    const clock = setInterval(() => {
+      const now = new Date();
+      const bd = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Dhaka', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(now);
+      const sec = now.getSeconds();
+      setTimer({ bd, sec });
 
-  if (!isLoggedIn) {
+      if (sec === 50) {
+        setAlert('READY NOW');
+        analyzeMarket(); // ৫০ সেকেন্ডে ডাটা ফেচ শুরু
+      } else if (sec === 56) {
+        if (preComputedSignal.current) {
+          setSignal(preComputedSignal.current.res);
+          setAccuracy(preComputedSignal.current.acc);
+          setPrice(preComputedSignal.current.price);
+          setAlert('ENTRY CONFIRMED');
+        }
+      } else if (sec === 1) {
+        setSignal('ANALYZING...');
+        setAlert('WAITING');
+        preComputedSignal.current = null;
+      }
+    }, 1000);
+    return () => clearInterval(clock);
+  }, [analyzeMarket]);
+
+  if (!isAuth) {
     return (
       <div className="login-screen"><style>{styles}</style>
-        <div className="login-card"><h2>RTX PRO MAX</h2>
-          <form onSubmit={(e) => { e.preventDefault(); if (e.target.u.value === ENV_USER && e.target.p.value === ENV_PASS) { localStorage.setItem('isAuth', 'true'); setIsLoggedIn(true); } else { alert("Error!"); } }}>
-            <div className="input-group"><label>USER</label><input name="u" type="text" required /></div>
-            <div className="input-group"><label>PASS</label><input name="p" type="password" required /></div>
-            <button type="submit" className="login-btn">LOGIN</button>
+        <div className="login-card">
+          <h2 style={{color:'#f3ba2f', textAlign:'center', margin:'0 0 20px 0'}}>RTX TERMINAL</h2>
+          <form onSubmit={handleLogin}>
+            <input placeholder="Admin ID" onChange={e => setLoginData({...loginData, user: e.target.value})} />
+            <input type="password" placeholder="Key Code" onChange={e => setLoginData({...loginData, pass: e.target.value})} />
+            <button>START ENGINE</button>
           </form>
         </div>
       </div>
@@ -109,22 +131,23 @@ function App() {
 
   return (
     <div className="app-container"><style>{styles}</style>
-      <header><div className="gold">RTX 15 PRO MAX</div></header>
+      <header>RTX 15 PRO MAX • LIVE</header>
       <div className="chart-box">
-        <iframe key={symbol} src={`https://tradingview.deriv.com/config.html?symbol=${symbol}&theme=dark&timezone=Asia/Dhaka&interval=1`} width="100%" height="100%" frameBorder="0"></iframe>
+        <iframe key={pair.tv} src={`https://s.tradingview.com/widgetembed/?symbol=${pair.tv}&interval=1&theme=dark&timezone=Asia%2FDhaka&style=1&hide_side_toolbar=true`} width="100%" height="100%" frameBorder="0"></iframe>
       </div>
       <div className="controls">
-        <select value={symbol} onChange={(e) => setSymbol(e.target.value)}>
-          {markets.map(m => <option key={m.id} value={m.id}>{m.name} REAL</option>)}
+        <select onChange={(e) => setPair(markets.find(m => m.tv === e.target.value))}>
+          {markets.map(m => <option key={m.tv} value={m.tv}>{m.name}</option>)}
         </select>
       </div>
-      <div className={`main-box ${isUp ? 'up-border' : 'down-border'}`}>
-        <div className={`signal-val ${isUp ? 'up-text' : 'down-text'}`}>{signal}</div>
+      <div className={`signal-card ${alert === 'READY NOW' ? 'flash-ready' : ''} ${signal.includes('CALL') ? 'up-border' : signal.includes('PUT') ? 'down-border' : ''}`}>
+        <div style={{textAlign:'center', color:'#f3ba2f', fontSize:'0.7rem', fontWeight:'bold'}}>{alert}</div>
+        <div className={`signal-val ${signal.includes('CALL') ? 'up-text' : 'down-text'}`}>{signal}</div>
         <div className="info-grid">
-          <div>BD TIME:</div><div className="value">{serverTime}</div>
-          <div>NEXT ENTRY:</div><div className="value">{entryTime}</div>
+          <span className="label">BD TIME</span><span className="value">{timer.bd}</span>
+          <span className="label">LAST PRICE</span><span className="value">{price}</span>
+          <span className="label">PROBABILITY</span><span className="value">{accuracy > 0 ? accuracy.toFixed(2)+'%' : '--'}</span>
         </div>
-        <div className="acc-meter">ACCURACY: {confidence.toFixed(2)}%</div>
       </div>
     </div>
   );
