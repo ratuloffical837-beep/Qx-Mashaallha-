@@ -19,13 +19,9 @@ const styles = `
   .status-text { color: #848e9c; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; margin-bottom: 5px; }
   .signal-val { font-size: 2.4rem; font-weight: 900; margin: 5px 0; }
   .up-text { color: #0ecb81; } .down-text { color: #f6465d; }
-  
-  /* ৩টি টাইমের জন্য নতুন গ্রিড স্টাইল */
-  .timer-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 10px; border-top: 1px solid #222; padding-top: 12px; }
-  .t-box { background: #050709; padding: 5px; border-radius: 6px; border: 1px solid #222; }
-  .t-label { color: #848e9c; font-size: 0.5rem; display: block; margin-bottom: 2px; text-transform: uppercase; }
-  .t-val { color: #fff; font-size: 0.7rem; font-weight: bold; font-family: monospace; }
-  
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 10px; border-top: 1px solid #222; padding-top: 10px; }
+  .label { color: #848e9c; font-size: 0.6rem; text-align: left; }
+  .value { color: #fff; font-size: 0.7rem; font-weight: bold; text-align: right; }
   .accuracy-box { background: rgba(243, 186, 47, 0.1); border: 1px solid #f3ba2f; color: #f3ba2f; padding: 6px; border-radius: 8px; margin-top: 10px; font-weight: 900; font-size: 0.85rem; }
   .login-screen { height: 100vh; display: flex; align-items: center; justify-content: center; background: #050709; }
   .login-card { background: #111418; padding: 30px; border-radius: 20px; border: 1px solid #f3ba2f; width: 300px; text-align: center; }
@@ -33,6 +29,7 @@ const styles = `
   .login-btn { width: 100%; padding: 14px; background: #f3ba2f; border: none; border-radius: 10px; font-weight: 900; cursor: pointer; }
 `;
 
+// আপনার দেওয়া ২৯টি সঠিক মার্কেট লিস্ট
 const markets = [
   { name: "EUR/USD", id: "frxEURUSD", tv: "FX:EURUSD" }, { name: "GBP/USD", id: "frxGBPUSD", tv: "FX:GBPUSD" },
   { name: "USD/JPY", id: "frxUSDJPY", tv: "FX:USDJPY" }, { name: "AUD/USD", id: "frxAUDUSD", tv: "FX:AUDUSD" },
@@ -57,8 +54,7 @@ export default function App() {
   const [signal, setSignal] = useState('SCANNING');
   const [confidence, setConfidence] = useState(0);
   const [status, setStatus] = useState('INITIALIZING...');
-  const [serverTime, setServerTime] = useState('00:00:00');
-  const [entryTime, setEntryTime] = useState('00:00:00');
+  const [serverTime, setServerTime] = useState('');
   const [secRemaining, setSecRemaining] = useState(60);
   const [candles, setCandles] = useState([]);
   
@@ -71,21 +67,17 @@ export default function App() {
   // হাই-প্রিসিশন টাইমার ইঞ্জিন
   useEffect(() => {
     const update = () => {
-      const now = new Date(Date.now() + serverOffset.current);
-      const bdTimeStr = now.toLocaleTimeString('en-GB', { timeZone: 'Asia/Dhaka' });
-      setServerTime(bdTimeStr);
+      const now = Date.now() + serverOffset.current;
+      const d = new Date(now);
+      setServerTime(d.toLocaleTimeString('en-GB', { timeZone: 'Asia/Dhaka' }));
       
-      const sec = now.getSeconds();
+      const sec = d.getSeconds();
       const remain = 60 - sec;
       setSecRemaining(remain);
 
-      // এন্ট্রি টাইম ক্যালকুলেশন (পরবর্তী ১ মিনিটের শুরু)
-      const nextCandle = new Date(now.getTime() + remain * 1000);
-      setEntryTime(nextCandle.toLocaleTimeString('en-GB', { timeZone: 'Asia/Dhaka' }));
-
       if (remain > 10) setStatus('DRIVE ANALYZING...');
       else if (remain <= 10 && remain > 3) setStatus('⚠️ 50s ALERT: PREPARE');
-      else if (remain === 3) setStatus('🔥 57s: SURE SHOT!');
+      else if (remain === 3) setStatus('🔥 57s: SURE SHOT!'); // ঠিক ৫৭ সেকেন্ডে
       else setStatus('EXECUTING...');
 
       requestAnimationFrame(update);
@@ -100,7 +92,7 @@ export default function App() {
     
     ws.current.onopen = () => {
       setStatus('DRIVE LIVE');
-      ws.current.send(JSON.stringify({ time: 1 }));
+      ws.current.send(JSON.stringify({ time: 1 })); // টাইম সিঙ্ক
       if (TOKEN) ws.current.send(JSON.stringify({ authorize: TOKEN }));
       ws.current.send(JSON.stringify({
         ticks_history: symbol.id,
@@ -172,26 +164,13 @@ export default function App() {
         <div className={`main-box ${status.includes('SURE') ? 'alert-border' : (signal.includes('UP') ? 'up-border' : 'down-border')}`}>
           <div className="status-text">{status}</div>
           <div className={`signal-val ${signal.includes('UP') ? 'up-text' : 'down-text'}`}>{signal}</div>
-          
-          {/* আপনার রিকোয়েস্ট অনুযায়ী ৩টি টাইম টাইমার */}
-          <div className="timer-grid">
-            <div className="t-box">
-              <span className="t-label">Live Time</span>
-              <span className="t-val">{serverTime}</span>
-            </div>
-            <div className="t-box">
-              <span className="t-label">Entry Time</span>
-              <span className="t-val">{entryTime}</span>
-            </div>
-            <div className="t-box">
-              <span className="t-label">Countdown</span>
-              <span className="t-val">{secRemaining}s</span>
-            </div>
+          <div className="info-grid">
+            <div className="label">NEXT CANDLE:</div><div className="value" style={{color:'#f3ba2f'}}>{secRemaining}s</div>
+            <div className="label">MARKET:</div><div className="value">{symbol.name}</div>
           </div>
-
           <div className="accuracy-box">ACCURACY: {confidence.toFixed(2)}%</div>
         </div>
       </div>
     </div>
   );
-}
+    }
