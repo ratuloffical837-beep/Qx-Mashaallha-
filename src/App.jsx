@@ -29,7 +29,7 @@ const styles = `
   .login-btn { width: 100%; padding: 14px; background: #f3ba2f; border: none; border-radius: 10px; font-weight: 900; cursor: pointer; }
 `;
 
-/const markets = [
+const markets = [
   // === REAL MARKETS (30 Major & Minor Pairs) ===
   { name: "EUR/USD", id: "frxEURUSD", tv: "FX:EURUSD" },
   { name: "GBP/USD", id: "frxGBPUSD", tv: "FX:GBPUSD" },
