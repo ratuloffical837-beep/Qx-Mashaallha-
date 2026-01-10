@@ -29,125 +29,23 @@ const styles = `
   .login-btn { width: 100%; padding: 14px; background: #f3ba2f; border: none; border-radius: 10px; font-weight: 900; cursor: pointer; }
 `;
 
+// আপনার দেওয়া ২৯টি সঠিক মার্কেট লিস্ট
 const markets = [
-  // === REAL MARKETS (30 Major & Minor Pairs) ===
-  { name: "EUR/USD", id: "frxEURUSD", tv: "FX:EURUSD" },
-  { name: "GBP/USD", id: "frxGBPUSD", tv: "FX:GBPUSD" },
-  { name: "USD/JPY", id: "frxUSDJPY", tv: "FX:USDJPY" },
-  { name: "AUD/USD", id: "frxAUDUSD", tv: "FX:AUDUSD" },
-  { name: "USD/CAD", id: "frxUSDCAD", tv: "FX:USDCAD" },
-  { name: "USD/CHF", id: "frxUSDCHF", tv: "FX:USDCHF" },
-  { name: "NZD/USD", id: "frxNZDUSD", tv: "FX:NZDUSD" },
-  { name: "EUR/JPY", id: "frxEURJPY", tv: "FX:EURJPY" },
-  { name: "GBP/JPY", id: "frxGBPJPY", tv: "FX:GBPJPY" },
-  { name: "EUR/GBP", id: "frxEURGBP", tv: "FX:EURGBP" },
-  { name: "AUD/JPY", id: "frxAUDJPY", tv: "FX:AUDJPY" },
-  { name: "EUR/AUD", id: "frxEURAUD", tv: "FX:EURAUD" },
-  { name: "EUR/CAD", id: "frxEURCAD", tv: "FX:EURCAD" },
-  { name: "GBP/AUD", id: "frxGBPAUD", tv: "FX:GBPAUD" },
-  { name: "GBP/CAD", id: "frxGBPCAD", tv: "FX:GBPCAD" },
-  { name: "AUD/CAD", id: "frxAUDCAD", tv: "FX:AUDCAD" },
-  { name: "AUD/CHF", id: "frxAUDCHF", tv: "FX:AUDCHF" },
-  { name: "CAD/JPY", id: "frxCADJPY", tv: "FX:CADJPY" },
-  { name: "CHF/JPY", id: "frxCHFJPY", tv: "FX:CHFJPY" },
-  { name: "EUR/CHF", id: "frxEURCHF", tv: "FX:EURCHF" },
-  { name: "NZD/JPY", id: "frxNZDJPY", tv: "FX:NZDJPY" },
-  { name: "Gold (XAU/USD)", id: "frxXAUUSD", tv: "OANDA:XAUUSD" },
-  { name: "Silver (XAG/USD)", id: "frxXAGUSD", tv: "OANDA:XAGUSD" },
-  { name: "Crude Oil (WTI)", id: "frxWTI", tv: "TVC:USOIL" },
-  { name: "Bitcoin (BTC)", id: "cryBTCUSD", tv: "BINANCE:BTCUSDT" },
-  { name: "Ethereum (ETH)", id: "cryETHUSD", tv: "BINANCE:ETHUSDT" },
-  { name: "Litecoin (LTC)", id: "cryLTCUSD", tv: "BINANCE:LTCUSDT" },
-  { name: "Nasdaq 100", id: "OTCIXNDX", tv: "CURRENCYCOM:US100" },
-  { name: "S&P 500", id: "OTCSPC", tv: "FOREXCOM:SPX500" },
-  { name: "DAX 40", id: "OTCIXDAX", tv: "FOREXCOM:GRXEUR" },
-
-  // === OTC / SYNTHETIC MARKETS (70 Deriv Drive Pairs) ===
-  // Volatility Indices
-  { name: "Volatility 10 Index", id: "R_10", tv: "DERIV:R_10" },
-  { name: "Volatility 25 Index", id: "R_25", tv: "DERIV:R_25" },
-  { name: "Volatility 50 Index", id: "R_50", tv: "DERIV:R_50" },
-  { name: "Volatility 75 Index", id: "R_75", tv: "DERIV:R_75" },
-  { name: "Volatility 100 Index", id: "R_100", tv: "DERIV:R_100" },
-  { name: "Volatility 10 (1s) Index", id: "1HZ10V", tv: "DERIV:1HZ10V" },
-  { name: "Volatility 25 (1s) Index", id: "1HZ25V", tv: "DERIV:1HZ25V" },
-  { name: "Volatility 50 (1s) Index", id: "1HZ50V", tv: "DERIV:1HZ50V" },
-  { name: "Volatility 75 (1s) Index", id: "1HZ75V", tv: "DERIV:1HZ75V" },
-  { name: "Volatility 100 (1s) Index", id: "1HZ100V", tv: "DERIV:1HZ100V" },
-  { name: "Volatility 150 (1s) Index", id: "1HZ150V", tv: "DERIV:1HZ150V" },
-  { name: "Volatility 250 (1s) Index", id: "1HZ250V", tv: "DERIV:1HZ250V" },
-
-  // Crash & Boom
-  { name: "Boom 300 Index", id: "BOOM300N", tv: "DERIV:BOOM300N" },
-  { name: "Boom 500 Index", id: "BOOM500", tv: "DERIV:BOOM500" },
-  { name: "Boom 1000 Index", id: "BOOM1000", tv: "DERIV:BOOM1000" },
-  { name: "Crash 300 Index", id: "CRASH300N", tv: "DERIV:CRASH300N" },
-  { name: "Crash 500 Index", id: "CRASH500", tv: "DERIV:CRASH500" },
-  { name: "Crash 1000 Index", id: "CRASH1000", tv: "DERIV:CRASH1000" },
-
-  // Jump Indices
-  { name: "Jump 10 Index", id: "DMJ10", tv: "DERIV:DMJ10" },
-  { name: "Jump 25 Index", id: "DMJ25", tv: "DERIV:DMJ25" },
-  { name: "Jump 50 Index", id: "DMJ50", tv: "DERIV:DMJ50" },
-  { name: "Jump 75 Index", id: "DMJ75", tv: "DERIV:DMJ75" },
-  { name: "Jump 100 Index", id: "DMJ100", tv: "DERIV:DMJ100" },
-
-  // Range Break
-  { name: "Range Break 100", id: "RDB100", tv: "DERIV:RDB100" },
-  { name: "Range Break 200", id: "RDB200", tv: "DERIV:RDB200" },
-
-  // Dex Indices
-  { name: "Dex 600 Index", id: "DEX600", tv: "DERIV:DEX600" },
-  { name: "Dex 900 Index", id: "DEX900", tv: "DERIV:DEX900" },
-  { name: "Dex 1500 Index", id: "DEX1500", tv: "DERIV:DEX1500" },
-
-  // Step Index
-  { name: "Step Index", id: "R_STP", tv: "DERIV:R_STP" },
-
-  // Market OTC mimic (Currencies)
-  { name: "USD/BDT (OTC)", id: "frxUSDBDT", tv: "FX:USDBDT" },
-  { name: "EUR/USD (OTC)", id: "frxEURUSD", tv: "FX:EURUSD" },
-  { name: "GBP/USD (OTC)", id: "frxGBPUSD", tv: "FX:GBPUSD" },
-  { name: "USD/JPY (OTC)", id: "frxUSDJPY", tv: "FX:USDJPY" },
-  { name: "AUD/CAD (OTC)", id: "frxAUDCAD", tv: "FX:AUDCAD" },
-  { name: "AUD/USD (OTC)", id: "frxAUDUSD", tv: "FX:AUDUSD" },
-  { name: "USD/CAD (OTC)", id: "frxUSDCAD", tv: "FX:USDCAD" },
-  { name: "EUR/JPY (OTC)", id: "frxEURJPY", tv: "FX:EURJPY" },
-  { name: "GBP/JPY (OTC)", id: "frxGBPJPY", tv: "FX:GBPJPY" },
-  { name: "EUR/GBP (OTC)", id: "frxEURGBP", tv: "FX:EURGBP" },
-  { name: "CHF/JPY (OTC)", id: "frxCHFJPY", tv: "FX:CHFJPY" },
-  { name: "CAD/JPY (OTC)", id: "frxCADJPY", tv: "FX:CADJPY" },
-  { name: "EUR/AUD (OTC)", id: "frxEURAUD", tv: "FX:EURAUD" },
-  { name: "GBP/AUD (OTC)", id: "frxGBPAUD", tv: "FX:GBPAUD" },
-  { name: "AUD/CHF (OTC)", id: "frxAUDCHF", tv: "FX:AUDCHF" },
-  { name: "NZD/USD (OTC)", id: "frxNZDUSD", tv: "FX:NZDUSD" },
-  { name: "USD/CHF (OTC)", id: "frxUSDCHF", tv: "FX:USDCHF" },
-  { name: "EUR/CAD (OTC)", id: "frxEURCAD", tv: "FX:EURCAD" },
-  { name: "GBP/CHF (OTC)", id: "frxGBPCHF", tv: "FX:GBPCHF" },
-  { name: "CAD/CHF (OTC)", id: "frxCADCHF", tv: "FX:CADCHF" },
-  { name: "AUD/NZD (OTC)", id: "frxAUDNZD", tv: "FX:AUDNZD" },
-  { name: "EUR/NZD (OTC)", id: "frxEURNZD", tv: "FX:EURNZD" },
-  { name: "GBP/NZD (OTC)", id: "frxGBPNZD", tv: "FX:GBPNZD" },
-  { name: "USD/SGD (OTC)", id: "frxUSDSGD", tv: "FX:USDSGD" },
-  { name: "USD/HKD (OTC)", id: "frxUSDHKD", tv: "FX:USDHKD" },
-  { name: "USD/MXN (OTC)", id: "frxUSDMXN", tv: "FX:USDMXN" },
-  { name: "USD/NOK (OTC)", id: "frxUSDNOK", tv: "FX:USDNOK" },
-  { name: "USD/SEK (OTC)", id: "frxUSDSEK", tv: "FX:USDSEK" },
-  { name: "USD/TRY (OTC)", id: "frxUSDTRY", tv: "FX:USDTRY" },
-  { name: "USD/ZAR (OTC)", id: "frxUSDZAR", tv: "FX:USDZAR" },
-  { name: "EUR/NOK (OTC)", id: "frxEURNOK", tv: "FX:EURNOK" },
-  { name: "EUR/SEK (OTC)", id: "frxEURSEK", tv: "FX:EURSEK" },
-  { name: "EUR/TRY (OTC)", id: "frxEURTRY", tv: "FX:EURTRY" },
-
-  // Stocks OTC mimic
-  { name: "Apple OTC", id: "cryAAPL", tv: "NASDAQ:AAPL" },
-  { name: "Google OTC", id: "cryGOOGL", tv: "NASDAQ:GOOGL" },
-  { name: "Microsoft OTC", id: "cryMSFT", tv: "NASDAQ:MSFT" },
-  { name: "Tesla OTC", id: "cryTSLA", tv: "NASDAQ:TSLA" },
-  { name: "Amazon OTC", id: "cryAMZN", tv: "NASDAQ:AMZN" },
-  { name: "Meta OTC", id: "cryMETA", tv: "NASDAQ:META" },
-  { name: "Boeing OTC", id: "cryBA", tv: "NYSE:BA" },
-  { name: "Netflix OTC", id: "cryNFLX", tv: "NASDAQ:NFLX" }
+  { name: "EUR/USD", id: "frxEURUSD", tv: "FX:EURUSD" }, { name: "GBP/USD", id: "frxGBPUSD", tv: "FX:GBPUSD" },
+  { name: "USD/JPY", id: "frxUSDJPY", tv: "FX:USDJPY" }, { name: "AUD/USD", id: "frxAUDUSD", tv: "FX:AUDUSD" },
+  { name: "USD/CAD", id: "frxUSDCAD", tv: "FX:USDCAD" }, { name: "EUR/JPY", id: "frxEURJPY", tv: "FX:EURJPY" },
+  { name: "GBP/JPY", id: "frxGBPJPY", tv: "FX:GBPJPY" }, { name: "Gold", id: "frxXAUUSD", tv: "OANDA:XAUUSD" },
+  { name: "Bitcoin", id: "cryBTCUSD", tv: "BINANCE:BTCUSDT" }, { name: "Ethereum", id: "cryETHUSD", tv: "BINANCE:ETHUSDT" },
+  { name: "Nasdaq 100", id: "OTCIXNDX", tv: "CURRENCYCOM:US100" }, { name: "S&P 500", id: "OTCSPC", tv: "FOREXCOM:SPX500" },
+  { name: "Volatility 100", id: "R_100", tv: "DERIV:R_100" }, { name: "Volatility 75", id: "R_75", tv: "DERIV:R_75" },
+  { name: "EUR/GBP", id: "frxEURGBP", tv: "FX:EURGBP" }, { name: "AUD/JPY", id: "frxAUDJPY", tv: "FX:AUDJPY" },
+  { name: "EUR/AUD", id: "frxEURAUD", tv: "FX:EURAUD" }, { name: "USD/CHF", id: "frxUSDCHF", tv: "FX:USDCHF" },
+  { name: "Silver", id: "frxXAGUSD", tv: "OANDA:XAGUSD" }, { name: "Crude Oil", id: "frxWTI", tv: "TVC:USOIL" },
+  { name: "AUD/CAD", id: "frxAUDCAD", tv: "FX:AUDCAD" }, { name: "AUD/CHF", id: "frxAUDCHF", tv: "FX:AUDCHF" },
+  { name: "CHF/JPY", id: "frxCHFJPY", tv: "FX:CHFJPY" }, { name: "EUR/CHF", id: "frxEURCHF", tv: "FX:EURCHF" },
+  { name: "GBP/AUD", id: "frxGBPAUD", tv: "FX:GBPAUD" }, { name: "CAD/JPY", id: "frxCADJPY", tv: "FX:CADJPY" },
+  { name: "USD/CNY", id: "frxUSDCNY", tv: "FX:USDCNY" }, { name: "China A50", id: "OTCIXCHINA", tv: "FX:CHINAA50" },
+  { name: "DAX 40", id: "OTCIXDAX", tv: "FOREXCOM:GRXEUR" }
 ];
 
 export default function App() {
@@ -275,4 +173,4 @@ export default function App() {
       </div>
     </div>
   );
-}
+    }
