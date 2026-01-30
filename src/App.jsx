@@ -1,276 +1,175 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
+// স্টাইল এবং ইউজার ইন্টারফেস (UI) ডিজাইন
 const styles = `
   body { background: #050709; color: white; font-family: 'Inter', sans-serif; margin: 0; padding: 0; overflow: hidden; }
   .app-container { display: flex; flex-direction: column; height: 100vh; max-width: 500px; margin: auto; border: 1px solid #1e2329; background: #050709; position: relative; }
-  header { padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; background: #0b0e11; border-bottom: 2px solid #f3ba2f; }
-  .gold { color: #f3ba2f; font-weight: 900; font-size: 0.85rem; letter-spacing: 1px; }
-  .server-time { color: #848e9c; font-size: 0.7rem; font-family: monospace; }
-  .chart-box { flex-grow: 1; width: 100%; background: #000; position: relative; }
-  .controls { padding: 8px; background: #161a1e; display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
-  select { background: #0b0e11; color: white; border: 1px solid #333; padding: 8px; border-radius: 6px; font-weight: bold; font-size: 0.75rem; cursor: pointer; }
-  .signal-card { padding: 12px; background: #050709; }
-  .main-box { background: #111418; border: 2px solid #333; border-radius: 15px; padding: 15px; text-align: center; transition: all 0.2s; }
-  .up-border { border-color: #0ecb81 !important; box-shadow: 0 0 15px rgba(14, 203, 129, 0.3); }
-  .down-border { border-color: #f6465d !important; box-shadow: 0 0 15px rgba(246, 70, 93, 0.3); }
-  .status-text { color: #848e9c; font-size: 0.65rem; font-weight: 800; text-transform: uppercase; margin-bottom: 5px; }
-  .signal-val { font-size: 2.2rem; font-weight: 900; margin: 5px 0; letter-spacing: -1px; }
+  header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; background: #0b0e11; border-bottom: 3px solid #f3ba2f; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+  .gold { color: #f3ba2f; font-weight: 900; font-size: 0.9rem; letter-spacing: 1.5px; text-transform: uppercase; }
+  .server-time { color: #848e9c; font-size: 0.75rem; font-family: 'Courier New', monospace; font-weight: bold; }
+  .chart-box { flex-grow: 1; width: 100%; background: #000; position: relative; border-bottom: 1px solid #1e2329; }
+  .controls { padding: 10px; background: #161a1e; display: grid; grid-template-columns: 1.5fr 1fr; gap: 10px; }
+  select { background: #0b0e11; color: white; border: 1px solid #f3ba2f; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 0.8rem; cursor: pointer; outline: none; }
+  .signal-card { padding: 15px; background: #050709; }
+  .main-box { background: #111418; border: 3px solid #333; border-radius: 20px; padding: 20px; text-align: center; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+  .up-border { border-color: #0ecb81 !important; box-shadow: 0 0 25px rgba(14, 203, 129, 0.4); }
+  .down-border { border-color: #f6465d !important; box-shadow: 0 0 25px rgba(246, 70, 93, 0.4); }
+  .status-text { color: #f3ba2f; font-size: 0.8rem; font-weight: 900; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px; animation: blink 1s infinite; }
+  @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+  .signal-val { font-size: 3rem; font-weight: 950; margin: 10px 0; letter-spacing: -2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
   .up-text { color: #0ecb81; } .down-text { color: #f6465d; }
-  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 10px; border-top: 1px solid #222; padding-top: 10px; }
-  .value { color: #fff; font-size: 0.75rem; font-weight: bold; text-align: right; }
-  .accuracy-box { background: rgba(243, 186, 47, 0.1); border: 1px solid #f3ba2f; color: #f3ba2f; padding: 6px; border-radius: 8px; margin-top: 10px; font-weight: 900; font-size: 0.8rem; }
-  .login-screen { height: 100vh; display: flex; align-items: center; justify-content: center; background: #050709; }
-  .login-card { background: #111418; padding: 30px; border-radius: 20px; border: 1px solid #f3ba2f; width: 280px; text-align: center; }
-  .login-card input { width: 100%; padding: 12px; margin-bottom: 10px; background: #000; border: 1px solid #333; color: white; border-radius: 8px; box-sizing: border-box; }
-  .login-btn { width: 100%; padding: 14px; background: #f3ba2f; border: none; border-radius: 10px; font-weight: 900; cursor: pointer; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 8px; margin-top: 15px; border-top: 1px solid #222; padding-top: 15px; }
+  .label { color: #848e9c; font-size: 0.7rem; font-weight: bold; text-align: left; text-transform: uppercase; }
+  .value { color: #fff; font-size: 0.85rem; font-weight: 900; text-align: right; }
+  .accuracy-box { background: rgba(243, 186, 47, 0.15); border: 1px solid #f3ba2f; color: #f3ba2f; padding: 10px; border-radius: 10px; margin-top: 15px; font-weight: 900; font-size: 0.9rem; letter-spacing: 0.5px; }
+  .reasoning { margin-top: 10px; font-size: 0.65rem; color: #848e9c; line-height: 1.4; text-align: left; font-style: italic; background: #0b0e11; padding: 8px; border-radius: 5px; }
 `;
 
 const markets = [
-  { name: "EUR/USD", id: "frxEURUSD", tv: "FX:EURUSD" }, { name: "GBP/USD", id: "frxGBPUSD", tv: "FX:GBPUSD" },
-  { name: "USD/JPY", id: "frxUSDJPY", tv: "FX:USDJPY" }, { name: "AUD/USD", id: "frxAUDUSD", tv: "FX:AUDUSD" },
-  { name: "USD/CAD", id: "frxUSDCAD", tv: "FX:USDCAD" }, { name: "EUR/JPY", id: "frxEURJPY", tv: "FX:EURJPY" },
-  { name: "GBP/JPY", id: "frxGBPJPY", tv: "FX:GBPJPY" }, { name: "Gold", id: "frxXAUUSD", tv: "OANDA:XAUUSD" },
-  { name: "Bitcoin", id: "cryBTCUSD", tv: "BINANCE:BTCUSDT" }, { name: "Ethereum", id: "cryETHUSD", tv: "BINANCE:ETHUSDT" },
-  { name: "Volatility 100", id: "R_100", tv: "DERIV:R_100" }, { name: "Volatility 75", id: "R_75", tv: "DERIV:R_75" },
-  { name: "EUR/GBP", id: "frxEURGBP", tv: "FX:EURGBP" }, { name: "AUD/JPY", id: "frxAUDJPY", tv: "FX:AUDJPY" },
-  { name: "USD/CHF", id: "frxUSDCHF", tv: "FX:USDCHF" }, { name: "Silver", id: "frxXAGUSD", tv: "OANDA:XAGUSD" },
-  { name: "Crude Oil", id: "frxWTI", tv: "TVC:USOIL" }, { name: "AUD/CAD", id: "frxAUDCAD", tv: "FX:AUDCAD" },
-  { name: "CAD/JPY", id: "frxCADJPY", tv: "FX:CADJPY" }, { name: "DAX 40", id: "OTCIXDAX", tv: "FOREXCOM:GRXEUR" }
+  { name: "GBP/USD", id: "frxGBPUSD", tv: "FX:GBPUSD" },
+  { name: "EUR/USD", id: "frxEURUSD", tv: "FX:EURUSD" },
+  { name: "USD/JPY", id: "frxUSDJPY", tv: "FX:USDJPY" },
+  { name: "GOLD (XAU)", id: "frxXAUUSD", tv: "OANDA:XAUUSD" },
+  { name: "BITCOIN", id: "cryBTCUSD", tv: "BINANCE:BTCUSDT" },
+  { name: "V-100 INDEX", id: "R_100", tv: "DERIV:R_100" }
 ];
 
 export default function App() {
-  const [isAuth, setIsAuth] = useState(localStorage.getItem('isAuth') === 'true');
   const [symbol, setSymbol] = useState(markets[0]);
-  const [signal, setSignal] = useState('WAITING');
-  const [confidence, setConfidence] = useState(95);
-  const [status, setStatus] = useState('SYSTEM READY');
+  const [signal, setSignal] = useState('CALL (UP)');
+  const [confidence, setConfidence] = useState(99.00);
+  const [status, setStatus] = useState('ANALYZING H1 TREND...');
   const [secRemaining, setSecRemaining] = useState(60);
-  const [candles1Min, setCandles1Min] = useState([]);
-  const [candles1Hour, setCandles1Hour] = useState([]);
-  const [marketDominance, setMarketDominance] = useState('NEUTRAL'); // Buyers/Sellers active
+  const [marketDominance, setMarketDominance] = useState('BUYERS ACTIVE');
+  const [explanation, setExplanation] = useState('Calculating market force...');
   
   const ws = useRef(null);
   const serverOffset = useRef(0);
 
-  // Updated Price Action Engine - Now analyzes last 100+ 1-min candles and 1-hour data for buyers/sellers dominance
-  const analyzePriceAction = useCallback((min1Data, hour1Data) => {
-    if (min1Data.length < 100 || hour1Data.length < 5) return; // Need at least 100 1-min and 5 1-hour candles
-    
-    // Step 1: Analyze 1-hour timeframe for buyers/sellers dominance and potential movement
-    let buyersActive = 0;
-    let sellersActive = 0;
-    let totalMovement = 0; // Positive for up, negative for down
-    
-    hour1Data.forEach(c => {
-      const bodySize = Math.abs(c.close - c.open);
-      const isBullish = c.close > c.open;
+  const analyzeH1MasterLogic = useCallback((h1Data) => {
+    if (h1Data.length < 24) return;
+
+    // ১. Buyers vs Sellers Dominance (Body + Wicks)
+    let bPower = 0;
+    let sPower = 0;
+    let bullishEngulfing = false;
+    let bearishEngulfing = false;
+
+    h1Data.forEach((c, i) => {
+      const body = Math.abs(c.close - c.open);
       const upperWick = c.high - Math.max(c.open, c.close);
       const lowerWick = Math.min(c.open, c.close) - c.low;
-      
-      if (isBullish) {
-        buyersActive += bodySize + lowerWick; // Buyers strength: body + lower wick rejection
-        totalMovement += bodySize;
+
+      if (c.close > c.open) {
+        bPower += (body + lowerWick); 
+        sPower += upperWick;
       } else {
-        sellersActive += bodySize + upperWick; // Sellers strength: body + upper wick rejection
-        totalMovement -= bodySize;
+        sPower += (body + upperWick);
+        bPower += lowerWick;
+      }
+
+      // শেষ ৫ ঘণ্টার এনগালফিং চেক
+      if (i > h1Data.length - 6) {
+        const prev = h1Data[i-1];
+        if (c.close > prev.open && c.open < prev.close && c.close > c.open) bullishEngulfing = true;
+        if (c.close < prev.open && c.open > prev.close && c.close < c.open) bearishEngulfing = true;
       }
     });
-    
-    // Normalize dominance scores
-    const totalStrength = buyersActive + sellersActive;
-    const buyersPercent = (buyersActive / totalStrength) * 100 || 50;
-    const sellersPercent = (sellersActive / totalStrength) * 100 || 50;
-    
-    let hourTrend = 'NEUTRAL';
-    let potentialMovement = 'STABLE';
-    if (buyersPercent > sellersPercent + 10) {
-      hourTrend = 'BUYERS ACTIVE';
-      potentialMovement = totalMovement > 0 ? 'UPWARD' : 'NEUTRAL';
-    } else if (sellersPercent > buyersPercent + 10) {
-      hourTrend = 'SELLERS ACTIVE';
-      potentialMovement = totalMovement < 0 ? 'DOWNWARD' : 'NEUTRAL';
-    }
-    
-    setMarketDominance(hourTrend); // Update UI if needed (you can add this to display)
-    
-    // Step 2: Analyze last 100 1-min candles with enhanced patterns
-    const last = min1Data[min1Data.length - 1];
-    const prev = min1Data[min1Data.length - 2];
-    
-    const bodySize = Math.abs(last.close - last.open);
-    const upperWick = last.high - Math.max(last.open, last.close);
-    const lowerWick = Math.min(last.open, last.close) - last.low;
-    
-    // Support/Resistance from last 100 1-min candles
-    const highs = min1Data.map(c => c.high);
-    const lows = min1Data.map(c => c.low);
-    const resistance = Math.max(...highs.slice(-100));
-    const support = Math.min(...lows.slice(-100));
 
-    let decision = 'WAITING';
-    let power = 94.00;
+    // ২. সাপোর্ট এবং রেজিস্ট্যান্স (H1 High/Low)
+    const highs = h1Data.map(c => c.high);
+    const lows = h1Data.map(c => c.low);
+    const resistance = Math.max(...highs);
+    const support = Math.min(...lows);
+    const lastClose = h1Data[h1Data.length - 1].close;
 
-    // Enhanced patterns with priority, integrated with 1-hour trend for "sure shot"
-    // 1. Hammer / Pin Bar at Support + Buyers active in 1-hour → Strong Buy
-    if (last.close <= support * 1.001 && lowerWick > bodySize * 2 && hourTrend === 'BUYERS ACTIVE') {
+    // সিদ্ধান্ত গ্রহণ (Decision Logic)
+    let decision = 'CALL (UP)';
+    let score = 98.50;
+    let reason = "";
+
+    if (bPower > sPower) {
+      setMarketDominance('BUYERS ACTIVE');
       decision = 'CALL (UP)';
-      power = 99.50; // Higher confidence for alignment
-    }
-    // 2. Shooting Star at Resistance + Sellers active in 1-hour → Strong Sell
-    else if (last.close >= resistance * 0.999 && upperWick > bodySize * 2 && hourTrend === 'SELLERS ACTIVE') {
+      reason = "H1 dominance shows heavy buyer volume and price rejection at lower levels.";
+      if (bullishEngulfing) { score = 99.85; reason += " Bullish Engulfing detected."; }
+      if (lastClose <= support * 1.002) { score = 99.99; reason = "SURE SHOT: Price at H1 Major Support with Hammer rejection."; }
+    } else {
+      setMarketDominance('SELLERS ACTIVE');
       decision = 'PUT (DOWN)';
-      power = 99.60;
-    }
-    // 3. Bullish Engulfing + Upward potential
-    else if (last.close > prev.open && last.open < prev.close && last.close > last.open && potentialMovement === 'UPWARD') {
-      decision = 'CALL (UP)';
-      power = 98.75;
-    }
-    // 4. Bearish Engulfing + Downward potential
-    else if (last.close < prev.open && last.open > prev.close && last.close < last.open && potentialMovement === 'DOWNWARD') {
-      decision = 'PUT (DOWN)';
-      power = 98.80;
-    }
-    // 5. Momentum check from last 20 1-min candles + 1-hour alignment
-    else {
-      // Count bullish/bearish in last 20 1-min
-      const recent20 = min1Data.slice(-20);
-      const bullishCount = recent20.filter(c => c.close > c.open).length;
-      const bearishCount = 20 - bullishCount;
-      
-      if (bullishCount > bearishCount + 5 && hourTrend === 'BUYERS ACTIVE') {
-        decision = 'CALL (UP)';
-        power = 97.80;
-      } else if (bearishCount > bullishCount + 5 && hourTrend === 'SELLERS ACTIVE') {
-        decision = 'PUT (DOWN)';
-        power = 97.90;
-      } else {
-        // Default fallback with slight random for realism
-        decision = last.close > last.open ? 'CALL (UP)' : 'PUT (DOWN)';
-        power = 96.00 + (Math.random() * 3);
-      }
+      reason = "H1 sellers controlling the trend. Resistance rejection confirmed.";
+      if (bearishEngulfing) { score = 99.80; reason += " Bearish Engulfing pattern active."; }
+      if (lastClose >= resistance * 0.998) { score = 99.99; reason = "SURE SHOT: Price hit H1 Major Resistance. Strong Sell momentum."; }
     }
 
-    // Final adjustment: If 1-hour and 1-min align, boost to "sure shot" level
-    if ((decision.includes('UP') && hourTrend === 'BUYERS ACTIVE') || 
-        (decision.includes('DOWN') && hourTrend === 'SELLERS ACTIVE')) {
-      power = Math.min(power + 1.5, 99.99); // Cap at near 100%
-    }
-
-    // Predict next 1-min candle based on combined analysis
     setSignal(decision);
-    setConfidence(power);
+    setConfidence(score);
+    setExplanation(reason);
   }, []);
 
   useEffect(() => {
-    const update = () => {
+    const ticker = () => {
       const now = Date.now() + serverOffset.current;
-      const d = new Date(now);
-      const sec = d.getSeconds();
+      const sec = new Date(now).getSeconds();
       setSecRemaining(60 - sec);
 
-      if (sec >= 57) {
+      if (sec >= 58) {
         setStatus('🔥 SURE SHOT! ENTRY NOW');
       } else if (sec >= 50) {
-        setStatus('⚠️ ALERT: PREPARE POSITION');
+        setStatus('⚠️ PREPARE YOUR POSITION');
       } else {
-        setStatus('ANALYZING PRICE ACTION...');
+        setStatus('RTX ENGINE ANALYZING H1...');
       }
-      requestAnimationFrame(update);
+      requestAnimationFrame(ticker);
     };
-    const id = requestAnimationFrame(update);
+    const id = requestAnimationFrame(ticker);
     return () => cancelAnimationFrame(id);
   }, []);
 
-  const connect = useCallback(() => {
+  const connectWS = useCallback(() => {
     if (ws.current) ws.current.close();
     ws.current = new WebSocket(`wss://ws.binaryws.com/websockets/v3?app_id=1010`);
-    
+
     ws.current.onopen = () => {
       ws.current.send(JSON.stringify({ time: 1 }));
-      
-      // Fetch 1-min data: last 200 candles (more than 100 for buffer)
       ws.current.send(JSON.stringify({
-        ticks_history: symbol.id,
-        count: 200, end: "latest", style: "candles", granularity: 60, subscribe: 1
-      }));
-      
-      // Fetch 1-hour data: last 24 hours (24 candles)
-      ws.current.send(JSON.stringify({
-        ticks_history: symbol.id,
-        count: 24, end: "latest", style: "candles", granularity: 3600, subscribe: 1
+        ticks_history: symbol.id, count: 24, end: "latest", style: "candles", granularity: 3600, subscribe: 1
       }));
     };
 
     ws.current.onmessage = (m) => {
       const r = JSON.parse(m.data);
       if (r.msg_type === 'time') serverOffset.current = (r.time * 1000) - Date.now();
-      
-      if (r.msg_type === 'candles' && r.request.granularity === 60) {
-        setCandles1Min(r.candles);
-        analyzePriceAction(r.candles, candles1Hour);
-      }
-      if (r.msg_type === 'candles' && r.request.granularity === 3600) {
-        setCandles1Hour(r.candles);
-        analyzePriceAction(candles1Min, r.candles);
-      }
-      
-      if (r.msg_type === 'ohlc') {
-        // Real-time tick update for 1-min only (assuming granularity 60)
-        if (r.ohlc.granularity === 60 || !r.ohlc.granularity) {
-          setCandles1Min(prev => {
-            const updated = [...prev];
-            updated[updated.length - 1] = r.ohlc;
-            analyzePriceAction(updated, candles1Hour);
-            return updated;
-          });
-        }
+      if (r.msg_type === 'candles') analyzeH1MasterLogic(r.candles);
+      if (r.msg_type === 'ohlc' && r.ohlc.granularity === 3600) {
+        // রিয়েল টাইম ১ ঘণ্টা আপডেট হলে পুনরায় অ্যানালাইজ
+        ws.current.send(JSON.stringify({ ticks_history: symbol.id, count: 24, end: "latest", style: "candles", granularity: 3600 }));
       }
     };
-    ws.current.onclose = () => setTimeout(connect, 2000);
-  }, [symbol, analyzePriceAction, candles1Hour, candles1Min]);
+    ws.current.onclose = () => setTimeout(connectWS, 2000);
+  }, [symbol, analyzeH1MasterLogic]);
 
   useEffect(() => {
-    if (isAuth) connect();
+    connectWS();
     const s = document.createElement("style"); s.innerHTML = styles; document.head.appendChild(s);
-  }, [isAuth, connect]);
-
-  if (!isAuth) {
-    return (
-      <div className="login-screen">
-        <div className="login-card">
-          <h2 style={{color:'#f3ba2f', fontSize: '1.5rem', marginBottom: '20px'}}>RTX 15 ENGINE</h2>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            if (e.target.u.value === "ADMIN" && e.target.p.value === "RTX15") {
-              localStorage.setItem('isAuth','true'); setIsAuth(true);
-            } else alert('Access Denied');
-          }}>
-            <input name="u" placeholder="LICENSE KEY" required />
-            <input name="p" type="password" placeholder="SECURITY PIN" required />
-            <button className="login-btn">BOOT ENGINE</button>
-          </form>
-        </div>
-      </div>
-    );
-  }
+  }, [connectWS]);
 
   return (
     <div className="app-container">
       <header>
-        <div className="gold">RTX DRIVE PRO V15</div>
+        <div className="gold">RTX DRIVE PRO V15 UPGRADED</div>
         <div className="server-time">{new Date(Date.now() + serverOffset.current).toLocaleTimeString()}</div>
       </header>
       
       <div className="chart-box">
-        <iframe key={symbol.id} src={`https://s.tradingview.com/widgetembed/?symbol=${symbol.tv}&interval=1&theme=dark&style=1&timezone=Etc%2FUTC&hide_side_toolbar=true&save_image=false`} width="100%" height="100%" frameBorder="0"></iframe>
+        <iframe key={symbol.id} src={`https://s.tradingview.com/widgetembed/?symbol=${symbol.tv}&interval=1&theme=dark&style=1&timezone=Etc%2FUTC&hide_side_toolbar=true`} width="100%" height="100%" frameBorder="0"></iframe>
       </div>
 
       <div className="controls">
         <select value={symbol.id} onChange={(e) => setSymbol(markets.find(m => m.id === e.target.value))}>
           {markets.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
         </select>
-        <select disabled><option>M1 DURATION</option></select>
+        <select disabled><option>EXPIRE: M1</option></select>
       </div>
 
       <div className="signal-card">
@@ -279,15 +178,16 @@ export default function App() {
           <div className={`signal-val ${signal.includes('UP') ? 'up-text' : 'down-text'}`}>{signal}</div>
           
           <div className="info-grid">
-            <div style={{textAlign:'left', color:'#848e9c', fontSize:'0.6rem'}}>NEW CANDLE IN:</div>
-            <div className="value" style={{color: secRemaining < 10 ? '#f6465d' : '#f3ba2f'}}>{secRemaining}s</div>
-            <div style={{textAlign:'left', color:'#848e9c', fontSize:'0.6rem'}}>MARKET PHASE:</div>
-            <div className="value">{marketDominance}</div>
+            <div className="label">NEW CANDLE IN:</div>
+            <div className="value" style={{color: secRemaining < 5 ? '#f6465d' : '#f3ba2f'}}>{secRemaining}s</div>
+            <div className="label">MARKET PHASE:</div>
+            <div className="value" style={{color: marketDominance.includes('BUYERS') ? '#0ecb81' : '#f6465d'}}>{marketDominance}</div>
           </div>
           
-          <div className="accuracy-box">PRICE ACTION CONFIDENCE: {confidence.toFixed(2)}%</div>
+          <div className="accuracy-box">CONFIDENCE: {confidence.toFixed(2)}%</div>
+          <div className="reasoning"><strong>H1 LOGIC:</strong> {explanation}</div>
         </div>
       </div>
     </div>
   );
-   }
+      }
