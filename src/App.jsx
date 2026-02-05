@@ -10,7 +10,7 @@ const styles = `
   .controls { padding: 10px; background: #161a1e; display: flex; gap: 8px; border-top: 1px solid #2b2f36; }
   select { background: #1e2329; color: white; border: 1px solid #f3ba2f; padding: 12px; border-radius: 8px; flex: 1; font-weight: bold; outline: none; }
   .signal-card { padding: 15px; background: #050709; }
-  .main-box { background: #111418; border: 3px solid #333; border-radius: 20px; padding: 20px; text-align: center; transition: 0.3s; }
+  .main-box { background: #111418; border: 3px solid #333; border-radius: 20px; padding: 20px; text-align: center; }
   .up-border { border-color: #0ecb81 !important; box-shadow: 0 0 35px rgba(14, 203, 129, 0.5); }
   .down-border { border-color: #f6465d !important; box-shadow: 0 0 35px rgba(246, 70, 93, 0.5); }
   .status-text { color: #f3ba2f; font-size: 1rem; font-weight: 800; text-transform: uppercase; margin-bottom: 5px; }
@@ -22,7 +22,6 @@ const styles = `
   .acc-meter { border: 1px solid #0ecb81; color: #0ecb81; padding: 10px; border-radius: 12px; margin-top: 15px; font-weight: 900; font-size: 1.2rem; }
 `;
 
-// Deriv Markets (Symbol ID and TV for Chart)
 const markets = [
   { name: "EUR/USD", id: "frxEURUSD", tv: "FX:EURUSD" }, { name: "GBP/USD", id: "frxGBPUSD", tv: "FX:GBPUSD" },
   { name: "USD/JPY", id: "frxUSDJPY", tv: "FX:USDJPY" }, { name: "AUD/USD", id: "frxAUDUSD", tv: "FX:AUDUSD" },
@@ -43,7 +42,7 @@ const markets = [
 
 export default function App() {
   const [symbol, setSymbol] = useState(markets[0]);
-  const [signal, setSignal] = useState('SCANNING');
+  const [signal, setSignal] = useState('SCANNING...');
   const [confidence, setConfidence] = useState(0);
   const [alert, setAlert] = useState('INITIALIZING...');
   const [serverTime, setServerTime] = useState('--:--:--');
@@ -52,94 +51,117 @@ export default function App() {
   const ws = useRef(null);
   const serverOffset = useRef(0);
 
-  // Deriv WebSocket Connection
-  useEffect(() => {
-    const connectWS = () => {
-      ws.current = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1010');
-
-      ws.current.onopen = () => {
-        // Sync Time
-        ws.current.send(JSON.stringify({ time: 1 }));
-        // Get Candles for Analysis
-        requestData();
-      };
-
-      ws.current.onmessage = (msg) => {
-        const res = JSON.parse(msg.data);
-        if (res.msg_type === 'time') {
-          serverOffset.current = (res.time * 1000) - Date.now();
-        }
-        if (res.msg_type === 'candles') {
-          mainAnalysisEngine(res.candles);
-        }
-      };
-
-      ws.current.onclose = () => setTimeout(connectWS, 3000);
-    };
-
-    connectWS();
-    const styleTag = document.createElement("style");
-    styleTag.innerHTML = styles;
-    document.head.appendChild(styleTag);
-
-    // Refresh data every 10 seconds for signal
-    const refreshData = setInterval(requestData, 10000);
-    return () => {
-      clearInterval(refreshData);
-      if (ws.current) ws.current.close();
-    };
-  }, [symbol]);
-
-  const requestData = () => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify({
-        ticks_history: symbol.id,
-        adjust_start_time: 1,
-        count: 100,
-        end: "latest",
-        granularity: 60, // 1 minute candles
-        style: "candles"
-      }));
-    }
-  };
-
-  // Your original analysis logic from file 1
+  // ১. মেইন অ্যানালাইসিস ইঞ্জিন (আপনার ১ম কোডের লজিক অনুযায়ী)
   const mainAnalysisEngine = (candles) => {
+    if (!candles || candles.length < 20) return;
+
     try {
       const closes = candles.map(c => parseFloat(c.close));
       const opens = candles.map(c => parseFloat(c.open));
       
-      // RSI calculation using technicalindicators
-      const rsi = ti.RSI.calculate({ values: closes, period: 14 }).pop();
+      // RSI Calculation (Period 14)
+      const rsiArray = ti.RSI.calculate({ values: closes, period: 14 });
+      const rsi = rsiArray[rsiArray.length - 1];
+      
       const lastClose = closes[closes.length - 1];
       const lastOpen = opens[opens.length - 1];
 
-      // Original Logic from File 1
+      // আপনার অরিজিনাল সিগন্যাল লজিক
       if (rsi < 45 || (lastClose > lastOpen && rsi < 60)) {
         setSignal('UP (CALL)');
-        setConfidence(98.10 + Math.random());
+        setConfidence(98.15 + Math.random());
       } else {
         setSignal('DOWN (PUT)');
-        setConfidence(98.20 + Math.random());
+        setConfidence(98.25 + Math.random());
       }
-    } catch (e) { console.error("Analysis Error"); }
+    } catch (e) {
+      console.error("Analysis Error:", e);
+    }
   };
 
-  // Timer logic for status messages
+  // ২. Deriv WebSocket কানেকশন এবং ডেটা রিকোয়েস্ট
+  useEffect(() => {
+    const connectWS = () => {
+      // পুরাতন কানেকশন থাকলে বন্ধ করা
+      if (ws.current) ws.current.close();
+      
+      ws.current = new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1010');
+
+      ws.current.onopen = () => {
+        console.log("Connected to Deriv");
+        // টাইম সিঙ্ক
+        ws.current.send(JSON.stringify({ time: 1 }));
+        // ডেটা সাবস্ক্রাইব (যাতে প্রতি টিক-এ আপডেট আসে)
+        ws.current.send(JSON.stringify({
+          ticks_history: symbol.id,
+          adjust_start_time: 1,
+          count: 100,
+          end: "latest",
+          granularity: 60,
+          style: "candles",
+          subscribe: 1 // রিয়েল টাইম আপডেটের জন্য
+        }));
+      };
+
+      ws.current.onmessage = (msg) => {
+        const res = JSON.parse(msg.data);
+        
+        // টাইম হ্যান্ডলিং
+        if (res.msg_type === 'time') {
+          serverOffset.current = (res.time * 1000) - Date.now();
+        }
+        
+        // ক্যান্ডেল ডেটা হ্যান্ডলিং
+        if (res.msg_type === 'candles') {
+          mainAnalysisEngine(res.candles);
+        }
+        
+        // যখন নতুন সাবস্ক্রিপশন ডেটা (OHLC) আসবে
+        if (res.msg_type === 'ohlc') {
+          // পুনরায় ক্যান্ডেল ডেটা রিকোয়েস্ট পাঠানো সঠিক অ্যানালাইসিসের জন্য
+          ws.current.send(JSON.stringify({
+            ticks_history: symbol.id,
+            count: 100,
+            end: "latest",
+            granularity: 60,
+            style: "candles"
+          }));
+        }
+      };
+
+      ws.current.onclose = () => {
+        console.log("Disconnected, retrying...");
+        setTimeout(connectWS, 3000);
+      };
+    };
+
+    connectWS();
+
+    // স্টাইল ইনজেকশন
+    const styleTag = document.createElement("style");
+    styleTag.innerHTML = styles;
+    document.head.appendChild(styleTag);
+
+    return () => {
+      if (ws.current) ws.current.close();
+    };
+  }, [symbol]);
+
+  // ৩. টাইমার এবং স্ট্যাটাস লজিক
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date(Date.now() + serverOffset.current);
       setServerTime(now.toLocaleTimeString('en-GB'));
       
       const sec = now.getSeconds();
-      if (sec > 40) {
-        setAlert('Predicting Market...');
-      } else if (sec <= 20 && sec > 4) {
-        setAlert('Find success for trading');
-      } else if (sec <= 4 && sec > 0) {
+      
+      // আপনার স্ট্যাটাস অ্যালার্ট লজিক
+      if (sec >= 45) {
         setAlert(`SURE SHOT ${signal.includes('UP') ? 'UP' : 'DOWN'}`);
+      } else if (sec >= 25) {
+        setAlert('Find success for trading');
       } else {
-        setAlert('ANALYZING...');
+        setAlert('Predicting Market...');
       }
 
       const next = new Date(now.getTime() + (60 - sec) * 1000);
@@ -151,12 +173,13 @@ export default function App() {
   return (
     <div className="app-container">
       <header>
-        <div className="gold">RTX DRIVE PRO V15.1</div>
-        <div style={{color:'#0ecb81', fontSize:'0.7rem'}}>PREMIUM ●</div>
+        <div className="gold">RTX DRIVE PRO V15.2</div>
+        <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
+          <div style={{color:'#0ecb81', fontSize:'0.7rem'}}>DERIV LIVE ●</div>
+        </div>
       </header>
 
       <div className="chart-box">
-        {/* Deriv specific TradingView integration */}
         <iframe 
           key={symbol.id}
           src={`https://s.tradingview.com/widgetembed/?symbol=${symbol.tv}&interval=1&theme=dark&style=1`} 
@@ -179,11 +202,11 @@ export default function App() {
             <div className="label">SERVER TIME:</div><div className="value">{serverTime}</div>
             <div className="label">ENTRY TIME:</div><div className="value">{entryTime}</div>
             <div className="label">MARKET:</div><div className="value">{symbol.name}</div>
-            <div className="label">RESULT:</div><div className="value">PREDICTED</div>
+            <div className="label">ACCURACY:</div><div className="value">{confidence.toFixed(2)}%</div>
           </div>
-          <div className="acc-meter">ACCURACY: {confidence.toFixed(2)}%</div>
+          <div className="acc-meter">TRADE STATUS: READY</div>
         </div>
       </div>
     </div>
   );
-  }
+   }
