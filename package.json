@@ -1,7 +1,7 @@
 {
-  "name": "rtx-drive-pro-v15",
+  "name": "rtx-pro-ai-v10-final",
   "private": true,
-  "version": "15.0.0",
+  "version": "10.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "technicalindicators": "^3.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.0.0",
