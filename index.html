@@ -1,50 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RTX MASTER AI PRO</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div id="root">
-        <header>
-            <div class="header-left">
-                <span class="status-dot"></span>
-                <span class="status-text">SIGNAL OPEN</span>
-            </div>
-            <div class="header-right">
-                <div class="holy-names">
-                    لَا إِلٰهَ إِلَّا اللهُ مُحَمَّدٌ رَسُولُ اللهِ | لَا إِلٰهَ إِلَّا أَنْتَ سُبْحَانَكَ إِنِّي كُنْتُ مِنَ الظَّالِمِينَ | يَا حَيُّ يَا قَيُّومُ
-                </div>
-            </div>
-        </header>
-
-        <main>
-            <div class="chart-container">
-                <iframe id="tradingview-chart" src="https://s.tradingview.com/widgetembed/?symbol=FX:EURUSD&interval=1&theme=dark" frameborder="0"></iframe>
-            </div>
-
-            <div class="control-panel">
-                <select id="market-select">
-                    </select>
-                <input type="text" id="session-cookie" placeholder="Paste Quotex Cookie/Session ID here...">
-                <button id="connect-btn">CONNECT BOT</button>
-            </div>
-
-            <div class="signal-engine">
-                <div id="signal-box" class="main-box">
-                    <div class="loader-text">PREDICTING MARKET...</div>
-                    <div id="signal-direction" class="signal-val">--</div>
-                    <div class="info-grid">
-                        <div class="item"><span>ACCURACY:</span> <b id="accuracy">0%</b></div>
-                        <div class="item"><span>LIVE TIME:</span> <b id="live-time">00:00:00</b></div>
-                        <div class="item"><span>ENTRY TIME:</span> <b id="entry-time">00:00:00</b></div>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
-    <script type="module" src="App.jsx"></script>
-</body>
-  </html>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
