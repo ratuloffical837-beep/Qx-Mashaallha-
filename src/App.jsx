@@ -36,7 +36,7 @@ export default function App() {
         setSignal('SCANNING MARKET...');
         try {
             // Vite Proxy ব্যবহার করা হয়েছে (/api/)
-            const res = await fetch('/api/fetch-quotex', {
+            const res = await fetch('https://qx-mashaallha.onrender.com/api/fetch-quotex', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ cookie, symbol: selected.id })
