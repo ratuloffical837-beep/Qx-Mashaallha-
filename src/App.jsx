@@ -1,9 +1,49 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 const markets = [
-    { name: "Volatility 10 Index", id: "R_10", tv: "DERIV:R_10" },
-    { name: "Volatility 75 Index", id: "R_75", tv: "DERIV:R_75" },
-    { name: "Volatility 100 Index", id: "R_100", tv: "DERIV:R_100" }
+    // --- Major Forex Pairs ---
+    { name: "EUR/USD", id: "frxEURUSD" },
+    { name: "GBP/USD", id: "frxGBPUSD" },
+    { name: "USD/JPY", id: "frxUSDJPY" },
+    { name: "AUD/USD", id: "frxAUDUSD" },
+    { name: "USD/CAD", id: "frxUSDCAD" },
+    { name: "USD/CHF", id: "frxUSDCHF" },
+    { name: "NZD/USD", id: "frxNZDUSD" },
+
+    // --- Euro Crosses ---
+    { name: "EUR/GBP", id: "frxEURGBP" },
+    { name: "EUR/JPY", id: "frxEURJPY" },
+    { name: "EUR/AUD", id: "frxEURAUD" },
+    { name: "EUR/CAD", id: "frxEURCAD" },
+    { name: "EUR/CHF", id: "frxEURCHF" },
+    { name: "EUR/NZD", id: "frxEURNZD" },
+
+    // --- Pound Crosses ---
+    { name: "GBP/JPY", id: "frxGBPJPY" },
+    { name: "GBP/AUD", id: "frxGBPAUD" },
+    { name: "GBP/CAD", id: "frxGBPCAD" },
+    { name: "GBP/CHF", id: "frxGBPCHF" },
+    { name: "GBP/NZD", id: "frxGBPNZD" },
+
+    // --- Other Minor Pairs ---
+    { name: "AUD/JPY", id: "frxAUDJPY" },
+    { name: "AUD/CAD", id: "frxAUDCAD" },
+    { name: "AUD/CHF", id: "frxAUDCHF" },
+    { name: "AUD/NZD", id: "frxAUDNZD" },
+    { name: "CAD/JPY", id: "frxCADJPY" },
+    { name: "CHF/JPY", id: "frxCHFJPY" },
+    { name: "NZD/JPY", id: "frxNZDJPY" },
+    { name: "NZD/CAD", id: "frxNZDCAD" },
+    { name: "NZD/CHF", id: "frxNZDCHF" },
+
+    // --- Exotic Pairs ---
+    { name: "USD/SGD", id: "frxUSDSGD" },
+    { name: "USD/HKD", id: "frxUSDHKD" },
+    { name: "USD/MXN", id: "frxUSDMXN" },
+    { name: "USD/ZAR", id: "frxUSDZAR" },
+    { name: "USD/TRY", id: "frxUSDTRY" },
+    { name: "EUR/TRY", id: "frxEURTRY" },
+    { name: "USD/CNH", id: "frxUSDCNH" }
 ];
 
 export default function App() {
