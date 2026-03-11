@@ -1,49 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 
+// আপনার দেওয়া ২৯টি সঠিক মার্কেট লিস্ট
 const markets = [
-    // --- Major Forex Pairs ---
-    { name: "EUR/USD", id: "frxEURUSD" },
-    { name: "GBP/USD", id: "frxGBPUSD" },
-    { name: "USD/JPY", id: "frxUSDJPY" },
-    { name: "AUD/USD", id: "frxAUDUSD" },
-    { name: "USD/CAD", id: "frxUSDCAD" },
-    { name: "USD/CHF", id: "frxUSDCHF" },
-    { name: "NZD/USD", id: "frxNZDUSD" },
-
-    // --- Euro Crosses ---
-    { name: "EUR/GBP", id: "frxEURGBP" },
-    { name: "EUR/JPY", id: "frxEURJPY" },
-    { name: "EUR/AUD", id: "frxEURAUD" },
-    { name: "EUR/CAD", id: "frxEURCAD" },
-    { name: "EUR/CHF", id: "frxEURCHF" },
-    { name: "EUR/NZD", id: "frxEURNZD" },
-
-    // --- Pound Crosses ---
-    { name: "GBP/JPY", id: "frxGBPJPY" },
-    { name: "GBP/AUD", id: "frxGBPAUD" },
-    { name: "GBP/CAD", id: "frxGBPCAD" },
-    { name: "GBP/CHF", id: "frxGBPCHF" },
-    { name: "GBP/NZD", id: "frxGBPNZD" },
-
-    // --- Other Minor Pairs ---
-    { name: "AUD/JPY", id: "frxAUDJPY" },
-    { name: "AUD/CAD", id: "frxAUDCAD" },
-    { name: "AUD/CHF", id: "frxAUDCHF" },
-    { name: "AUD/NZD", id: "frxAUDNZD" },
-    { name: "CAD/JPY", id: "frxCADJPY" },
-    { name: "CHF/JPY", id: "frxCHFJPY" },
-    { name: "NZD/JPY", id: "frxNZDJPY" },
-    { name: "NZD/CAD", id: "frxNZDCAD" },
-    { name: "NZD/CHF", id: "frxNZDCHF" },
-
-    // --- Exotic Pairs ---
-    { name: "USD/SGD", id: "frxUSDSGD" },
-    { name: "USD/HKD", id: "frxUSDHKD" },
-    { name: "USD/MXN", id: "frxUSDMXN" },
-    { name: "USD/ZAR", id: "frxUSDZAR" },
-    { name: "USD/TRY", id: "frxUSDTRY" },
-    { name: "EUR/TRY", id: "frxEURTRY" },
-    { name: "USD/CNH", id: "frxUSDCNH" }
+  { name: "EUR/USD", id: "frxEURUSD", tv: "FX:EURUSD" }, { name: "GBP/USD", id: "frxGBPUSD", tv: "FX:GBPUSD" },
+  { name: "USD/JPY", id: "frxUSDJPY", tv: "FX:USDJPY" }, { name: "AUD/USD", id: "frxAUDUSD", tv: "FX:AUDUSD" },
+  { name: "USD/CAD", id: "frxUSDCAD", tv: "FX:USDCAD" }, { name: "EUR/JPY", id: "frxEURJPY", tv: "FX:EURJPY" },
+  { name: "GBP/JPY", id: "frxGBPJPY", tv: "FX:GBPJPY" }, { name: "Gold", id: "frxXAUUSD", tv: "OANDA:XAUUSD" },
+  { name: "Bitcoin", id: "cryBTCUSD", tv: "BINANCE:BTCUSDT" }, { name: "Ethereum", id: "cryETHUSD", tv: "BINANCE:ETHUSDT" },
+  { name: "Nasdaq 100", id: "OTCIXNDX", tv: "CURRENCYCOM:US100" }, { name: "S&P 500", id: "OTCSPC", tv: "FOREXCOM:SPX500" },
+  { name: "Volatility 100", id: "R_100", tv: "DERIV:R_100" }, { name: "Volatility 75", id: "R_75", tv: "DERIV:R_75" },
+  { name: "EUR/GBP", id: "frxEURGBP", tv: "FX:EURGBP" }, { name: "AUD/JPY", id: "frxAUDJPY", tv: "FX:AUDJPY" },
+  { name: "EUR/AUD", id: "frxEURAUD", tv: "FX:EURAUD" }, { name: "USD/CHF", id: "frxUSDCHF", tv: "FX:USDCHF" },
+  { name: "Silver", id: "frxXAGUSD", tv: "OANDA:XAGUSD" }, { name: "Crude Oil", id: "frxWTI", tv: "TVC:USOIL" },
+  { name: "AUD/CAD", id: "frxAUDCAD", tv: "FX:AUDCAD" }, { name: "AUD/CHF", id: "frxAUDCHF", tv: "FX:AUDCHF" },
+  { name: "CHF/JPY", id: "frxCHFJPY", tv: "FX:CHFJPY" }, { name: "EUR/CHF", id: "frxEURCHF", tv: "FX:EURCHF" },
+  { name: "GBP/AUD", id: "frxGBPAUD", tv: "FX:GBPAUD" }, { name: "CAD/JPY", id: "frxCADJPY", tv: "FX:CADJPY" },
+  { name: "USD/CNY", id: "frxUSDCNY", tv: "FX:USDCNY" }, { name: "China A50", id: "OTCIXCHINA", tv: "FX:CHINAA50" },
+  { name: "DAX 40", id: "OTCIXDAX", tv: "FOREXCOM:GRXEUR" }
 ];
 
 export default function App() {
