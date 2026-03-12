@@ -1,20 +1,23 @@
-body { background: #0b0e11; color: #fff; font-family: 'Inter', sans-serif; margin: 0; overflow: hidden; }
-.header { display: flex; justify-content: space-between; padding: 10px; background: #1e2329; border-bottom: 1px solid #333; font-size: 11px; font-weight: bold; }
-.on { color: #0ecb81; } .off { color: #f6465d; } .target-info { color: #f3ba2f; }
-.chart-box { height: 38vh; }
-.ui-panel { padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-.score-row { display: flex; gap: 8px; }
-.box { flex: 1; padding: 12px; border-radius: 8px; text-align: center; background: #1e2329; border: 1px solid #2b3139; font-weight: 800; font-size: 12px; }
-.win { color: #0ecb81; } .loss { color: #f6465d; } .profit { color: #f3ba2f; border-color: #f3ba2f; }
-.signal-area { background: #1e2329; padding: 20px; border-radius: 12px; text-align: center; border: 1px solid #2b3139; margin-bottom: 10px; position: relative; }
-.up { color: #0ecb81; border-color: #0ecb81; animation: glow-up 1.5s infinite; }
-.down { color: #f6465d; border-color: #f6465d; animation: glow-down 1.5s infinite; }
-.m-text { font-size: 12px; margin-top: 5px; color: #f3ba2f; opacity: 0.8; }
-.inputs { display: flex; gap: 8px; } .inputs input { flex: 1; }
-input, select, .start-btn { padding: 12px; background: #1e2329; color: #fff; border: 1px solid #333; border-radius: 6px; }
-.start-btn { background: #f3ba2f; color: #000; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; }
-.start-btn:active { transform: scale(0.96); }
-.lock-card { background: rgba(243,186,47,0.1); border: 2px solid #f3ba2f; color: #f3ba2f; padding: 30px; border-radius: 12px; text-align: center; font-weight: bold; }
-.locked .chart-box, .locked .control-card { filter: blur(5px); opacity: 0.4; pointer-events: none; }
-@keyframes glow-up { 0% { box-shadow: 0 0 5px #0ecb81; } 50% { box-shadow: 0 0 20px #0ecb81; } 100% { box-shadow: 0 0 5px #0ecb81; } }
-@keyframes glow-down { 0% { box-shadow: 0 0 5px #f6465d; } 50% { box-shadow: 0 0 20px #f6465d; } 100% { box-shadow: 0 0 5px #f6465d; } }
+body { margin: 0; background: #0b0e11; color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; }
+.app-container { min-height: 100vh; transition: 0.5s ease-in-out; }
+.status-bar { display: flex; justify-content: space-between; padding: 12px; background: rgba(0,0,0,0.7); font-size: 11px; font-weight: 700; }
+.ok { color: #0ecb81; } .no { color: #f6465d; }
+.trend-lbl { color: #f3ba2f; text-transform: uppercase; }
+.trading-view { height: 40vh; border-bottom: 2px solid #2b3139; }
+.control-ui { padding: 15px; display: flex; flex-direction: column; gap: 12px; }
+.signal-info { background: #1e2329; border: 2px solid #2b3139; border-radius: 12px; padding: 20px; text-align: center; position: relative; }
+.signal-info.CALL { border-color: #0ecb81; box-shadow: 0 0 10px rgba(14,203,129,0.2); }
+.signal-info.PUT { border-color: #f6465d; box-shadow: 0 0 10px rgba(246,70,93,0.2); }
+.acc-tag { position: absolute; top: -10px; right: 12px; background: #f3ba2f; color: #000; padding: 2px 10px; border-radius: 4px; font-size: 10px; font-weight: 800; }
+.sig-text { font-size: 32px; font-weight: 900; margin: 5px 0; letter-spacing: 1px; }
+.reason-text { font-size: 12px; color: #848e9c; font-style: italic; }
+.score-row { display: flex; gap: 10px; }
+.box { flex: 1; background: #1e2329; padding: 12px; border-radius: 10px; text-align: center; font-weight: bold; border: 1px solid #2b3139; }
+.win-c { color: #0ecb81; } .loss-c { color: #f6465d; } .prof-c { color: #f3ba2f; }
+.setup-area { display: flex; flex-direction: column; gap: 8px; }
+input, select { background: #1e2329; border: 1px solid #2b3139; color: #fff; padding: 14px; border-radius: 8px; font-size: 14px; outline: none; }
+.row { display: flex; gap: 10px; } .row input { flex: 1; }
+button { flex: 1; padding: 15px; border-radius: 8px; border: none; font-weight: 800; cursor: pointer; transition: 0.2s; }
+.btn-activ { background: #0ecb81; color: #000; flex: 2.5; }
+.btn-del { background: #f6465d; color: #fff; flex: 1; }
+button:active { transform: translateY(2px); opacity: 0.8; }
