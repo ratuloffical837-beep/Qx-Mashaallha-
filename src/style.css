@@ -1,23 +1,34 @@
 body { margin: 0; background: #0b0e11; color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; }
-.app-container { min-height: 100vh; transition: 0.5s ease-in-out; }
-.status-bar { display: flex; justify-content: space-between; padding: 12px; background: rgba(0,0,0,0.7); font-size: 11px; font-weight: 700; }
-.ok { color: #0ecb81; } .no { color: #f6465d; }
-.trend-lbl { color: #f3ba2f; text-transform: uppercase; }
-.trading-view { height: 40vh; border-bottom: 2px solid #2b3139; }
-.control-ui { padding: 15px; display: flex; flex-direction: column; gap: 12px; }
-.signal-info { background: #1e2329; border: 2px solid #2b3139; border-radius: 12px; padding: 20px; text-align: center; position: relative; }
-.signal-info.CALL { border-color: #0ecb81; box-shadow: 0 0 10px rgba(14,203,129,0.2); }
-.signal-info.PUT { border-color: #f6465d; box-shadow: 0 0 10px rgba(246,70,93,0.2); }
-.acc-tag { position: absolute; top: -10px; right: 12px; background: #f3ba2f; color: #000; padding: 2px 10px; border-radius: 4px; font-size: 10px; font-weight: 800; }
-.sig-text { font-size: 32px; font-weight: 900; margin: 5px 0; letter-spacing: 1px; }
-.reason-text { font-size: 12px; color: #848e9c; font-style: italic; }
-.score-row { display: flex; gap: 10px; }
-.box { flex: 1; background: #1e2329; padding: 12px; border-radius: 10px; text-align: center; font-weight: bold; border: 1px solid #2b3139; }
-.win-c { color: #0ecb81; } .loss-c { color: #f6465d; } .prof-c { color: #f3ba2f; }
-.setup-area { display: flex; flex-direction: column; gap: 8px; }
-input, select { background: #1e2329; border: 1px solid #2b3139; color: #fff; padding: 14px; border-radius: 8px; font-size: 14px; outline: none; }
-.row { display: flex; gap: 10px; } .row input { flex: 1; }
-button { flex: 1; padding: 15px; border-radius: 8px; border: none; font-weight: 800; cursor: pointer; transition: 0.2s; }
-.btn-activ { background: #0ecb81; color: #000; flex: 2.5; }
-.btn-del { background: #f6465d; color: #fff; flex: 1; }
-button:active { transform: translateY(2px); opacity: 0.8; }
+.pro-app { min-height: 100vh; transition: 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+.top-bar { display: flex; justify-content: space-between; padding: 12px; background: rgba(22, 26, 30, 0.9); font-size: 11px; font-weight: 800; border-bottom: 1px solid #2b3139; }
+.gold { color: #f3ba2f; } .green { color: #0ecb81; } .red { color: #f6465d; }
+
+.task-card { background: #1e2329; margin: 10px; padding: 18px; border-radius: 14px; border: 1px solid #f3ba2f; box-shadow: 0 10px 20px rgba(0,0,0,0.4); }
+.row-sb { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; }
+.next-stake { margin-top: 12px; font-size: 14px; color: #f3ba2f; font-weight: 800; }
+.rec-tag { font-size: 9px; background: #f6465d; color: #fff; padding: 2px 8px; border-radius: 4px; margin-left: 8px; vertical-align: middle; animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: 0.5; } }
+.prog-bg { height: 10px; background: #333; border-radius: 10px; margin: 12px 0; overflow: hidden; }
+.prog-bar { height: 100%; background: linear-gradient(90deg, #f3ba2f, #ffea00); transition: 1.5s ease-in-out; }
+
+.chart { height: 32vh; border-bottom: 2px solid #2b3139; }
+.ui-wrap { padding: 12px; display: flex; flex-direction: column; gap: 12px; }
+
+.sig-box { background: #161a1e; border: 2px solid #2b3139; border-radius: 18px; padding: 22px; text-align: center; position: relative; }
+.sig-box.UP { border-color: #0ecb81; box-shadow: 0 0 25px rgba(14,203,129,0.25); }
+.sig-box.DOWN { border-color: #f6465d; box-shadow: 0 0 25px rgba(246,70,93,0.25); }
+.acc-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #f3ba2f; color: #000; padding: 4px 18px; border-radius: 8px; font-size: 11px; font-weight: 900; }
+.sig-txt { font-size: 34px; font-weight: 900; margin: 12px 0; letter-spacing: 2px; }
+.sig-meta { font-size: 12px; color: #848e9c; border-top: 1px solid #2b3139; padding-top: 12px; font-family: monospace; }
+
+.stats-grid { display: flex; gap: 10px; }
+.s-box { flex: 1; background: #1e2329; padding: 14px; text-align: center; border-radius: 12px; font-weight: 800; border: 1px solid #333; font-size: 13px; }
+
+.footer-ui { display: flex; flex-direction: column; gap: 10px; }
+input, select { background: #1e2329; border: 1px solid #2b3139; color: #fff; padding: 14px; border-radius: 10px; font-size: 14px; outline: none; transition: 0.3s; }
+input:focus { border-color: #f3ba2f; }
+.row-f { display: flex; gap: 10px; } .row-f input { flex: 1; }
+button { flex: 1; padding: 16px; border-radius: 10px; border: none; font-weight: 900; cursor: pointer; transition: 0.3s; text-transform: uppercase; }
+.btn-go { background: #0ecb81; color: #000; flex: 3; }
+.btn-rst { background: #f6465d; color: #fff; }
+button:active { transform: scale(0.96); }
