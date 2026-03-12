@@ -1,20 +1,9 @@
 {
-  "name": "ai-master-v9-pro-final",
+  "name": "ai-master-v10-final",
   "private": true,
-  "version": "1.2.0",
+  "version": "10.0.0",
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "express": "^4.18.2"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.0.0",
-    "vite": "^4.3.0"
-  }
+  "scripts": { "dev": "vite", "build": "vite build", "start": "node server.js" },
+  "dependencies": { "react": "^18.2.0", "react-dom": "^18.2.0", "express": "^4.18.2" },
+  "devDependencies": { "@vitejs/plugin-react": "^4.0.0", "vite": "^4.3.0" }
 }
