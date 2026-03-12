@@ -1,9 +1,6 @@
 import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import cors from 'cors';
 const app = express();
-app.use(express.static(path.join(__dirname, 'dist')));
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'dist', 'index.html')));
-app.listen(process.env.PORT || 5000);
+app.use(cors());
+app.get('/', (req, res) => res.send('Power AI V8 Online'));
+app.listen(5000, () => console.log('Backend Ready'));
