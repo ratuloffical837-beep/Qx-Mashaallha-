@@ -1,6 +1,12 @@
 import express from 'express';
-import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-app.use(cors());
-app.get('/', (req, res) => res.send('Power AI V8 Online'));
-app.listen(5000, () => console.log('Backend Ready'));
+const PORT = process.env.PORT || 5000;
+
+app.use(express.static(path.join(__dirname, 'dist')));
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'dist', 'index.html')));
+
+app.listen(PORT, () => console.log(`AI MASTER PRO running on port ${PORT}`));
