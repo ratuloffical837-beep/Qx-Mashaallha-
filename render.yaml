@@ -12,15 +12,15 @@ services:
       - key: PORT
         value: 5000
       - key: BOT_TOKEN
-        sync: false
+        sync: true
       - key: ADMIN_TELEGRAM_ID
-        sync: false
+        sync: true
       - key: FIREBASE_SERVICE_ACCOUNT_B64
-        sync: false
+        sync: true
       - key: WEBHOOK_SECRET
-        sync: false
+        sync: true
       - key: RENDER_EXTERNAL_URL
-        sync: false
+        sync: true
 
   # ── FRONTEND ────────────────────────────────────────────────
   - type: web
