@@ -7,7 +7,7 @@ const BKASH_NUMBER   = '01725218874'
 const NAGAD_NUMBER   = '01725218874'
 const SUPPORT_LINK   = 'https://t.me/ratulhossain56'
 const MONTHLY_AMOUNT = 1000
-const BACKEND_URL    = 'https://master-ai-backend.onrender.com'  // Deploy পরে এটি ঠিক থাকবে
+const BACKEND_URL    = 'https://qx-mashaallha.onrender.com'  // Deploy পরে এটি ঠিক থাকবে
 
 // ── Colors ─────────────────────────────────────────────────────
 const C = {
