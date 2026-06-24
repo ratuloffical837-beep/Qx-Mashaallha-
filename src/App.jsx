@@ -14,7 +14,7 @@ const getTgUser = () => {
   return { id: 12345, first_name: 'Test', last_name: '', username: 'testuser' }
 }
 
-const BACKEND_URL = 'https://master-ai-backend.onrender.com'
+const BACKEND_URL = 'https://qx-mashaallha.onrender.com'
 
 // ── Colors ─────────────────────────────────────────────────────
 const C = {
