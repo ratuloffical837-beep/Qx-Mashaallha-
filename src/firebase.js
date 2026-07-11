@@ -1,15 +1,15 @@
 import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
 
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey:            "AIzaSyChYNS0363dMysBjOshDrVXU4lFzqGFxo4",
-  authDomain:        "qutex-massaallah.firebaseapp.com",
-  projectId:         "qutex-massaallah",
-  storageBucket:     "qutex-massaallah.firebasestorage.app",
-  messagingSenderId: "317798520655",
-  appId:             "1:317798520655:web:73e942ad119bd8c3f7d73a",
-  measurementId:     "G-BDY9S0V7YE",
-}
+  apiKey: "AIzaSyCrDGsthtBUFhZ1-6PxnFXcpmb0w9IszFM",
+  authDomain: "qutex-afb64.firebaseapp.com",
+  projectId: "qutex-afb64",
+  storageBucket: "qutex-afb64.firebasestorage.app",
+  messagingSenderId: "833115908129",
+  appId: "1:833115908129:web:6f9a8362cc853e97065b60"
+};
 
 const app = initializeApp(firebaseConfig)
 export const db = getFirestore(app)
