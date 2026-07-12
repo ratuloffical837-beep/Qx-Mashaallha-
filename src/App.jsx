@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from './firebase'
 import { doc, onSnapshot } from 'firebase/firestore'
 import PaymentPage from './PaymentPage'
-import { markets, runSignalEngine } from './signalEngine'
+import { forexMarkets, runSignalEngine, MIN_CANDLES } from './signalEngine'
 
 // ── Telegram WebApp ───────────────────────────────────────────
 const tg = window.Telegram?.WebApp
@@ -10,11 +10,8 @@ if (tg) { tg.ready(); tg.expand() }
 
 const getTgUser = () => {
   if (tg?.initDataUnsafe?.user) return tg.initDataUnsafe.user
-  // Dev-এ test user
   return { id: 12345, first_name: 'Test', last_name: '', username: 'testuser' }
 }
-
-const BACKEND_URL = 'https://qx-mashaallha.onrender.com'
 
 // ── Colors ─────────────────────────────────────────────────────
 const C = {
@@ -23,28 +20,63 @@ const C = {
   green: '#0ecb81', red: '#f6465d', gold: '#f3ba2f', blue: '#60a5fa',
 }
 
+// ── Twelve Data config ───────────────────────────────────────
+const TD_BASE = 'https://api.twelvedata.com'
+const CANDLE_COUNT = 150        // history pulled per signal (well under 5000-point cap)
+const DAILY_LIMIT_FALLBACK = 800 // shown until api_usage confirms the real plan limit
+const TRADE_SECONDS = 60         // 1-minute candle prediction
+
+// ── localStorage helpers ──────────────────────────────────────
+const localDateStr = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+const getStoredUsage = () => {
+  try {
+    const raw = JSON.parse(localStorage.getItem('td_usage'))
+    if (raw && raw.date === localDateStr()) return raw
+  } catch (_) {}
+  const fresh = { date: localDateStr(), count: 0 }
+  localStorage.setItem('td_usage', JSON.stringify(fresh))
+  return fresh
+}
+
+const bumpStoredUsage = () => {
+  const u = getStoredUsage()
+  u.count += 1
+  localStorage.setItem('td_usage', JSON.stringify(u))
+  return u.count
+}
+
 export default function App() {
   const tgUser = getTgUser()
 
   // ── Auth ──────────────────────────────────────────────────────
   const [authStatus, setAuthStatus] = useState('loading')
 
+  // ── Twelve Data API key state ───────────────────────────────
+  const [apiKey, setApiKey] = useState(localStorage.getItem('td_api_key') || '')
+  const [keyInput, setKeyInput] = useState('')
+  const [keyValid, setKeyValid] = useState(null)      // null=unchecked, true/false
+  const [keyChecking, setKeyChecking] = useState(false)
+  const [keySavedDate, setKeySavedDate] = useState(localStorage.getItem('td_key_saved_date') || null)
+  const [usage, setUsage] = useState(getStoredUsage())
+  const [planLimit, setPlanLimit] = useState(DAILY_LIMIT_FALLBACK)
+
   // ── Trading ───────────────────────────────────────────────────
-  const [selected, setSelected]   = useState(markets[0])
-  const [dToken, setDToken]       = useState(localStorage.getItem('d_token') || '')
-  const [dAppId, setDAppId]       = useState(localStorage.getItem('d_app_id') || '1089')
-  const [isSaved, setIsSaved]     = useState(!!localStorage.getItem('d_token'))
-  const [liveTime, setLiveTime]   = useState('--:--:--')
-  const [connStatus, setConnStatus] = useState('OFFLINE')
-  const [sigData, setSigData]     = useState({ direction: null, strength: 50, breakdown: {}, confidence: 0 })
-  const [lastPred, setLastPred]   = useState(null)
-  const [mLevel, setMLevel]       = useState(1)
-  const [scanning, setScanning]   = useState(false)
-  const [score, setScore]         = useState(JSON.parse(localStorage.getItem('trade_score')) || { win: 0, loss: 0, profit: 0 })
+  const [selected, setSelected] = useState(forexMarkets[0])
+  const [liveTime, setLiveTime] = useState('--:--:--')
+  const [connStatus, setConnStatus] = useState(apiKey ? 'READY' : 'API KEY লাগবে')
+  const [sigData, setSigData] = useState({ direction: null, strength: 50, breakdown: {}, confidence: 0 })
+  const [lastPred, setLastPred] = useState(null)
+  const [mLevel, setMLevel] = useState(1)
+  const [scanning, setScanning] = useState(false)
+  const [score, setScore] = useState(JSON.parse(localStorage.getItem('trade_score')) || { win: 0, loss: 0, profit: 0 })
   const [unlockTime, setUnlockTime] = useState(localStorage.getItem('unlock_time') || null)
-  const [isLocked, setIsLocked]   = useState(false)
+  const [isLocked, setIsLocked] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
-  const wsRef = useRef(null)
+  const resultTimerRef = useRef(null)
 
   const dailyTarget = (() => {
     if (!localStorage.getItem('start_date')) localStorage.setItem('start_date', new Date().toISOString())
@@ -78,118 +110,180 @@ export default function App() {
     return () => unsub()
   }, [tgUser.id])
 
-  // ── Fetch candles ─────────────────────────────────────────────
-  const fetchMarketData = useCallback(() => {
-    if (!isSaved || isLocked) return
-    if (wsRef.current) { try { wsRef.current.close() } catch (_) {} }
-    setScanning(true)
-
-    const ws = new WebSocket(`wss://ws.binaryws.com/websockets/v3?app_id=${dAppId}`)
-    wsRef.current = ws
-
-    ws.onopen = () => ws.send(JSON.stringify({ authorize: dToken }))
-
-    ws.onmessage = (e) => {
-      try {
-        const res = JSON.parse(e.data)
-
-        if (res.error) {
-          const c = res.error.code
-          setConnStatus(c === 'InvalidToken' ? 'TOKEN ERROR ❌' : c === 'InvalidAppID' ? 'APP ID ERROR ❌' : 'ERROR ❌')
-          setScanning(false); ws.close(); return
-        }
-
-        if (res.msg_type === 'authorize') {
-          setConnStatus('CONNECTED ✅')
-          ws.send(JSON.stringify({
-            ticks_history: selected.id, count: 80,
-            end: 'latest', style: 'candles', granularity: 60,
-          }))
-        }
-
-        if (res.msg_type === 'candles' && res.candles) {
-          const completed = res.candles.slice(0, -1)
-          const result = runSignalEngine(completed)
-          setSigData(result)
-          if (result.direction) {
-            setLastPred(result.direction)
-            try { new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play() } catch (_) {}
-          }
-          setScanning(false); ws.close()
-        }
-      } catch (err) {
-        setScanning(false); ws.close()
-      }
-    }
-
-    ws.onerror = () => { setConnStatus('NETWORK ERROR ❌'); setScanning(false); try { ws.close() } catch (_) {} }
-    ws.onclose = () => setScanning(false)
-  }, [isSaved, isLocked, dToken, dAppId, selected])
-
-  // ── Auto result check ─────────────────────────────────────────
-  const checkResult = useCallback(() => {
-    if (!lastPred) return
-    const ws = new WebSocket(`wss://ws.binaryws.com/websockets/v3?app_id=${dAppId}`)
-
-    ws.onopen = () => ws.send(JSON.stringify({
-      ticks_history: selected.id, count: 3,
-      end: 'latest', style: 'candles', granularity: 60,
-    }))
-
-    ws.onmessage = (e) => {
-      try {
-        const res = JSON.parse(e.data)
-        if (res.msg_type === 'candles' && res.candles) {
-          const closed = res.candles[res.candles.length - 2]
-          if (!closed) { ws.close(); return }
-
-          const actual = parseFloat(closed.close) > parseFloat(closed.open) ? 'CALL' : 'PUT'
-          const isWin = lastPred === actual
-
-          setScore(prev => {
-            const change = isWin ? parseFloat((mLevel * 0.85).toFixed(2)) : -mLevel
-            const updated = {
-              win:    isWin ? prev.win + 1 : prev.win,
-              loss:   isWin ? prev.loss : prev.loss + 1,
-              profit: parseFloat((prev.profit + change).toFixed(2)),
-            }
-            localStorage.setItem('trade_score', JSON.stringify(updated))
-            if (updated.profit >= dailyTarget) {
-              const lock = new Date(Date.now() + 12 * 3600 * 1000).toISOString()
-              setUnlockTime(lock); localStorage.setItem('unlock_time', lock)
-            }
-            return updated
-          })
-
-          setMLevel(prev => isWin ? 1 : prev === 1 ? 2.5 : prev === 2.5 ? 5.5 : 1)
-          setLastPred(null)
-          setSigData({ direction: null, strength: 50, breakdown: {}, confidence: 0 })
-          ws.close()
-        }
-      } catch (_) { ws.close() }
-    }
-
-    ws.onerror = () => { try { ws.close() } catch (_) {} }
-  }, [lastPred, mLevel, dAppId, selected, dailyTarget])
-
-  // ── Clock ─────────────────────────────────────────────────────
+  // ── Clock + lock timer ──────────────────────────────────────
   useEffect(() => {
     const tick = setInterval(() => {
       const now = new Date()
       setLiveTime(now.toLocaleTimeString('en-GB'))
-      const sec = now.getSeconds()
-
       if (unlockTime) {
         if (now < new Date(unlockTime)) setIsLocked(true)
         else { setIsLocked(false); setUnlockTime(null); localStorage.removeItem('unlock_time') }
       }
-
-      if (authStatus !== 'approved') return
-      if (sec === 56 && isSaved && !isLocked) fetchMarketData()
-      if (sec === 4  && isSaved && !isLocked && lastPred) checkResult()
     }, 1000)
     return () => clearInterval(tick)
-  }, [fetchMarketData, checkResult, isSaved, isLocked, unlockTime, lastPred, authStatus])
+  }, [unlockTime])
+
+  // ── Cleanup pending result-check timer on unmount ───────────
+  useEffect(() => () => { if (resultTimerRef.current) clearTimeout(resultTimerRef.current) }, [])
+
+  // ── Twelve Data: fetch usage + validate key ─────────────────
+  const checkKeyStatus = useCallback(async (key) => {
+    if (!key) { setKeyValid(null); return }
+    setKeyChecking(true)
+    try {
+      const res = await fetch(`${TD_BASE}/api_usage?apikey=${encodeURIComponent(key)}`)
+      const data = await res.json()
+      if (data.code && data.code >= 400) {
+        setKeyValid(false)
+      } else {
+        setKeyValid(true)
+        if (typeof data.current_usage === 'number') {
+          setUsage(prev => ({ ...prev, count: data.current_usage }))
+        }
+        if (typeof data.plan_limit === 'number') setPlanLimit(data.plan_limit)
+      }
+    } catch (_) {
+      setKeyValid(false)
+    } finally {
+      setKeyChecking(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (apiKey) checkKeyStatus(apiKey)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSaveKey = () => {
+    const trimmed = keyInput.trim()
+    if (!trimmed) return
+    localStorage.setItem('td_api_key', trimmed)
+    const savedAt = new Date().toISOString()
+    localStorage.setItem('td_key_saved_date', savedAt)
+    setApiKey(trimmed)
+    setKeySavedDate(savedAt)
+    setKeyInput('')
+    setConnStatus('READY')
+    checkKeyStatus(trimmed)
+  }
+
+  const handleDeleteKey = () => {
+    if (!window.confirm('API key মুছে ফেলবেন?')) return
+    localStorage.removeItem('td_api_key')
+    localStorage.removeItem('td_key_saved_date')
+    setApiKey('')
+    setKeySavedDate(null)
+    setKeyValid(null)
+    setConnStatus('API KEY লাগবে')
+  }
+
+  const daysUsingKey = keySavedDate
+    ? Math.max(0, Math.floor((Date.now() - new Date(keySavedDate)) / 86400000))
+    : null
+
+  // ── Twelve Data: fetch candles ──────────────────────────────
+  const fetchCandles = useCallback(async (symbol) => {
+    const url = `${TD_BASE}/time_series?symbol=${encodeURIComponent(symbol)}&interval=1min&outputsize=${CANDLE_COUNT}&apikey=${apiKey}`
+    const res = await fetch(url)
+    const data = await res.json()
+
+    if (data.status === 'error' || (data.code && data.code >= 400)) {
+      throw new Error(data.message || 'Twelve Data API error')
+    }
+    if (!data.values || !Array.isArray(data.values)) {
+      throw new Error('কোনো ডেটা পাওয়া যায়নি')
+    }
+
+    bumpStoredUsage()
+    setUsage(getStoredUsage())
+
+    // Twelve Data returns newest-first by default → reverse to chronological
+    const chronological = data.values.slice().reverse().map(v => ({
+      open: v.open, high: v.high, low: v.low, close: v.close, datetime: v.datetime,
+    }))
+    // Drop the last bar — on the free plan it may still be forming / delayed,
+    // so we only trust fully-closed candles for signal math.
+    return chronological.slice(0, -1)
+  }, [apiKey])
+
+  // ── Manual signal generation ────────────────────────────────
+  const generateSignal = useCallback(async () => {
+    if (!apiKey) { setConnStatus('API KEY লাগবে'); setShowSettings(true); return }
+    if (isLocked) return
+    if (usage.count >= planLimit) { setConnStatus('DAILY LIMIT শেষ ❌'); return }
+
+    setScanning(true)
+    setConnStatus('ডেটা আনা হচ্ছে...')
+
+    try {
+      const candles = await fetchCandles(selected.td)
+      if (candles.length < MIN_CANDLES) {
+        setConnStatus('পর্যাপ্ত ডেটা নেই ❌')
+        setScanning(false)
+        return
+      }
+
+      const result = runSignalEngine(candles)
+      setSigData(result)
+      setConnStatus('CONNECTED ✅')
+
+      if (result.direction) {
+        setLastPred(result.direction)
+        try { new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play() } catch (_) {}
+
+        // Schedule exactly ONE follow-up check after the trade duration —
+        // this costs 1 extra API call, not a repeating poll.
+        if (resultTimerRef.current) clearTimeout(resultTimerRef.current)
+        resultTimerRef.current = setTimeout(() => { checkResult(result.direction) }, (TRADE_SECONDS + 5) * 1000)
+      }
+    } catch (e) {
+      console.error(e)
+      setConnStatus(/invalid api key/i.test(e.message) ? 'API KEY ভুল ❌' : 'ERROR ❌')
+    } finally {
+      setScanning(false)
+    }
+  }, [apiKey, selected, isLocked, usage, planLimit, fetchCandles]) // eslint-disable-line
+
+  // ── Result check (single follow-up call, not polling) ──────
+  const checkResult = useCallback(async (predDirection) => {
+    if (!apiKey) return
+    try {
+      const url = `${TD_BASE}/time_series?symbol=${encodeURIComponent(selected.td)}&interval=1min&outputsize=3&apikey=${apiKey}`
+      const res = await fetch(url)
+      const data = await res.json()
+      bumpStoredUsage()
+      setUsage(getStoredUsage())
+
+      if (data.status === 'error' || !data.values) return
+      const chronological = data.values.slice().reverse()
+      const closed = chronological[chronological.length - 2] // last fully-closed bar
+      if (!closed) return
+
+      const actual = parseFloat(closed.close) > parseFloat(closed.open) ? 'CALL' : 'PUT'
+      const isWin = predDirection === actual
+
+      setScore(prev => {
+        const change = isWin ? parseFloat((mLevel * 0.85).toFixed(2)) : -mLevel
+        const updated = {
+          win: isWin ? prev.win + 1 : prev.win,
+          loss: isWin ? prev.loss : prev.loss + 1,
+          profit: parseFloat((prev.profit + change).toFixed(2)),
+        }
+        localStorage.setItem('trade_score', JSON.stringify(updated))
+        if (updated.profit >= dailyTarget) {
+          const lock = new Date(Date.now() + 12 * 3600 * 1000).toISOString()
+          setUnlockTime(lock); localStorage.setItem('unlock_time', lock)
+        }
+        return updated
+      })
+
+      setMLevel(prev => isWin ? 1 : prev === 1 ? 2.5 : prev === 2.5 ? 5.5 : 1)
+      setLastPred(null)
+      // Keep breakdown visible — only clear direction/confidence, not the indicator readout
+      setSigData(prev => ({ direction: null, strength: prev.strength, breakdown: prev.breakdown, confidence: prev.confidence }))
+    } catch (e) {
+      console.error('checkResult error:', e)
+    }
+  }, [apiKey, selected, mLevel, dailyTarget])
 
   // ── Auth guards ───────────────────────────────────────────────
   if (authStatus === 'loading') {
@@ -206,24 +300,18 @@ export default function App() {
   }
 
   // ── Trading UI ────────────────────────────────────────────────
-  const dir    = sigData.direction
-  const str    = sigData.strength
-  const conf   = sigData.confidence
+  const dir = sigData.direction
+  const str = sigData.strength
+  const conf = sigData.confidence
   const isCall = dir === 'CALL'
-  const isPut  = dir === 'PUT'
+  const isPut = dir === 'PUT'
   const sigColor = isCall ? C.green : isPut ? C.red : C.muted
   const sigLabel =
-    scanning   ? '⟳  স্ক্যান হচ্ছে...' :
-    isCall     ? '▲  CALL  (UP)' :
-    isPut      ? '▼  PUT  (DOWN)' :
-    lastPred   ? '⏳  রেজাল্ট আসছে...' :
-                 '—  সিগনাল অপেক্ষায়'
-
-  const handleSave = () => {
-    localStorage.setItem('d_token', dToken)
-    localStorage.setItem('d_app_id', dAppId)
-    setIsSaved(true); setShowSettings(false)
-  }
+    scanning ? '⟳  স্ক্যান হচ্ছে...' :
+    isCall ? '▲  CALL  (UP)' :
+    isPut ? '▼  PUT  (DOWN)' :
+    lastPred ? '⏳  রেজাল্ট আসছে...' :
+    '—  সিগনাল জেনারেট করুন'
 
   const handleReset = () => {
     if (!window.confirm('স্কোর রিসেট করবেন?')) return
@@ -232,6 +320,8 @@ export default function App() {
     localStorage.removeItem('trade_score')
     localStorage.removeItem('start_date')
   }
+
+  const usagePct = Math.min(100, Math.round((usage.count / planLimit) * 100))
 
   return (
     <div style={{ background: C.bg, color: C.text, fontFamily: "'Inter',sans-serif", minHeight: '100vh', overflowX: 'hidden' }}>
@@ -242,7 +332,9 @@ export default function App() {
         padding: '8px 14px', background: C.card, borderBottom: `1px solid ${C.border}`,
         fontSize: 11, fontWeight: 700,
       }}>
-        <span style={{ color: connStatus.includes('✅') ? C.green : C.red }}>{connStatus}</span>
+        <span style={{ color: connStatus.includes('✅') || connStatus === 'READY' ? C.green : connStatus.includes('❌') ? C.red : C.gold }}>
+          {connStatus}
+        </span>
         <span style={{ color: C.gold }}>🎯 লক্ষ্য: ৳{dailyTarget}</span>
         <span style={{ color: C.muted, fontVariantNumeric: 'tabular-nums' }}>{liveTime}</span>
       </header>
@@ -250,7 +342,7 @@ export default function App() {
       {/* ── CHART ── */}
       <div style={{ height: '34vh', background: '#0d1117' }}>
         <iframe
-          key={selected.id}
+          key={selected.td}
           src={`https://s.tradingview.com/widgetembed/?symbol=${selected.tv}&theme=dark&hide_top_toolbar=1&save_image=0`}
           width="100%" height="100%" style={{ border: 'none', display: 'block' }}
           title="chart"
@@ -260,8 +352,8 @@ export default function App() {
       {/* ── SCORE ROW ── */}
       <div style={{ display: 'flex', gap: 6, padding: '10px 12px 0' }}>
         {[
-          { l: 'WIN',    v: score.win,        c: C.green },
-          { l: 'LOSS',   v: score.loss,       c: C.red   },
+          { l: 'WIN', v: score.win, c: C.green },
+          { l: 'LOSS', v: score.loss, c: C.red },
           { l: 'PROFIT', v: `$${score.profit}`, c: C.gold },
         ].map(x => (
           <div key={x.l} style={{
@@ -302,24 +394,21 @@ export default function App() {
               boxShadow: isCall ? `0 0 24px ${C.green}33` : isPut ? `0 0 24px ${C.red}33` : 'none',
               transition: 'all 0.4s',
             }}>
-              {/* Signal label */}
               <div style={{ textAlign: 'center', fontSize: 20, fontWeight: 900, color: sigColor, marginBottom: 10, letterSpacing: '0.04em' }}>
                 {sigLabel}
               </div>
 
-              {/* Confidence badge */}
               {dir && (
                 <div style={{ textAlign: 'center', marginBottom: 10 }}>
                   <span style={{
                     background: conf >= 80 ? `${C.green}22` : `${C.gold}22`,
-                    color:      conf >= 80 ? C.green : C.gold,
-                    border:     `1px solid ${conf >= 80 ? C.green : C.gold}55`,
+                    color: conf >= 80 ? C.green : C.gold,
+                    border: `1px solid ${conf >= 80 ? C.green : C.gold}55`,
                     borderRadius: 20, padding: '3px 14px', fontSize: 11, fontWeight: 700,
                   }}>{conf}% কনফিডেন্স</span>
                 </div>
               )}
 
-              {/* Strength bar */}
               <div style={{ marginBottom: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, color: C.muted, marginBottom: 3 }}>
                   <span>PUT ↓</span>
@@ -333,13 +422,20 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Breakdown */}
+              {/* Breakdown — always visible once first signal is generated, top 4 first */}
               {Object.keys(sigData.breakdown).length > 0 && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 8px', marginBottom: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 6px', marginBottom: 8 }}>
                   {Object.entries(sigData.breakdown).map(([k, v]) => (
-                    <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, padding: '4px 8px', borderRadius: 5, background: '#0d1117' }}>
-                      <span style={{ color: '#444' }}>{k}</span>
-                      <span style={{ color: v.includes('BULL') ? C.green : v.includes('BEAR') ? C.red : C.muted, fontWeight: 700 }}>{v}</span>
+                    <div key={k} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      fontSize: 9.5, padding: '5px 7px', borderRadius: 5, background: '#0d1117',
+                      overflow: 'hidden', gap: 4,
+                    }}>
+                      <span style={{ color: '#555', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{k}</span>
+                      <span style={{
+                        color: v.includes('BULL') ? C.green : v.includes('BEAR') ? C.red : C.muted,
+                        fontWeight: 700, whiteSpace: 'nowrap', fontSize: 9,
+                      }}>{v}</span>
                     </div>
                   ))}
                 </div>
@@ -353,22 +449,28 @@ export default function App() {
             </div>
 
             {/* ── MARKET SELECT ── */}
-            <select value={selected.id} onChange={e => setSelected(markets.find(m => m.id === e.target.value))}
+            <select value={selected.td} onChange={e => setSelected(forexMarkets.find(m => m.td === e.target.value))}
               style={{ padding: '11px 12px', borderRadius: 8, background: C.panel, color: C.text, border: `1px solid ${C.border}`, fontSize: 12 }}>
-              {markets.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              {['Major', 'Cross', 'Exotic'].map(cat => (
+                <optgroup key={cat} label={cat}>
+                  {forexMarkets.filter(m => m.cat === cat).map(m => (
+                    <option key={m.td} value={m.td}>{m.name}</option>
+                  ))}
+                </optgroup>
+              ))}
             </select>
 
             {/* ── ACTION BUTTONS ── */}
             <div style={{ display: 'flex', gap: 8 }}>
               <button
-                onClick={fetchMarketData}
-                disabled={scanning || !isSaved}
+                onClick={generateSignal}
+                disabled={scanning || !apiKey}
                 style={{
                   flex: 2, padding: '14px', borderRadius: 8, fontWeight: 800, fontSize: 13,
-                  border: 'none', cursor: scanning || !isSaved ? 'not-allowed' : 'pointer',
+                  border: 'none', cursor: scanning || !apiKey ? 'not-allowed' : 'pointer',
                   background: scanning ? C.panel : C.green,
-                  color:      scanning ? C.muted : '#000',
-                  opacity:    !isSaved ? 0.5 : 1,
+                  color: scanning ? C.muted : '#000',
+                  opacity: !apiKey ? 0.5 : 1,
                   transition: '0.2s',
                 }}>
                 {scanning ? '⟳ স্ক্যান হচ্ছে...' : '🔍 সিগনাল জেনারেট'}
@@ -380,25 +482,66 @@ export default function App() {
               }}>⚙️</button>
             </div>
 
-            {/* ── SETTINGS ── */}
+            {/* ── SETTINGS PANEL ── */}
             {showSettings && (
               <div style={{ background: C.card, borderRadius: 12, padding: 14, border: `1px solid ${C.border}` }}>
                 <div style={{ fontSize: 10, color: C.muted, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 10 }}>
-                  Deriv API সেটিং
+                  🔑 Twelve Data API Key
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <input type="text" placeholder="App ID (default: 1089)" value={dAppId}
-                    onChange={e => setDAppId(e.target.value)}
-                    style={{ padding: '10px 12px', borderRadius: 8, background: '#0d1117', color: C.text, border: `1px solid ${C.border}`, fontSize: 12, outline: 'none' }} />
-                  <input type="password" placeholder="Deriv API Token" value={dToken}
-                    onChange={e => setDToken(e.target.value)}
-                    style={{ padding: '10px 12px', borderRadius: 8, background: '#0d1117', color: C.text, border: `1px solid ${C.border}`, fontSize: 12, outline: 'none' }} />
-                  <button onClick={handleSave} style={{
-                    padding: 11, borderRadius: 8, background: C.gold,
+
+                {apiKey ? (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                      <span style={{ color: C.green, fontSize: 12, fontWeight: 700 }}>
+                        ✅ Key saved (...{apiKey.slice(-6)})
+                      </span>
+                      <button onClick={handleDeleteKey} style={{
+                        padding: '4px 10px', borderRadius: 6, background: 'transparent',
+                        border: `1px solid ${C.red}`, color: C.red, fontSize: 10, cursor: 'pointer',
+                      }}>🗑️ Delete</button>
+                    </div>
+
+                    <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>
+                      স্ট্যাটাস: {keyChecking ? '⏳ চেক হচ্ছে...' : keyValid === true ? '🟢 Valid' : keyValid === false ? '🔴 Invalid / Expired' : '⚪ যাচাই করা হয়নি'}
+                    </div>
+                    {daysUsingKey !== null && (
+                      <div style={{ fontSize: 11, color: C.muted, marginBottom: 8 }}>
+                        📅 এই key দিয়ে ব্যবহার করছেন: <b style={{ color: C.text }}>{daysUsingKey} দিন</b>
+                      </div>
+                    )}
+                    <button onClick={() => checkKeyStatus(apiKey)} style={{
+                      padding: '6px 12px', borderRadius: 6, background: C.panel,
+                      border: `1px solid ${C.border}`, color: C.blue, fontSize: 10, cursor: 'pointer',
+                    }}>🔄 আবার যাচাই করুন</button>
+                  </div>
+                ) : (
+                  <div style={{ color: C.muted, fontSize: 11, marginBottom: 10 }}>কোনো key সেভ করা নেই</div>
+                )}
+
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                  <input type="text" placeholder="Enter Twelve Data API key..." value={keyInput}
+                    onChange={e => setKeyInput(e.target.value)}
+                    style={{ flex: 1, padding: '10px 12px', borderRadius: 8, background: '#0d1117', color: C.text, border: `1px solid ${C.border}`, fontSize: 12, outline: 'none' }} />
+                  <button onClick={handleSaveKey} style={{
+                    padding: '0 16px', borderRadius: 8, background: C.gold,
                     color: '#000', fontWeight: 800, fontSize: 12, border: 'none', cursor: 'pointer',
-                  }}>
-                    {isSaved ? '✅ সেভ আছে' : '💾 সেভ করুন'}
-                  </button>
+                  }}>💾 Save</button>
+                </div>
+
+                <div style={{ fontSize: 10, color: '#555', lineHeight: 1.6, marginBottom: 12 }}>
+                  ফ্রি key পাবেন <a href="https://twelvedata.com" target="_blank" rel="noreferrer" style={{ color: C.blue }}>twelvedata.com</a>-এ।
+                  ফ্রি প্ল্যান: দৈনিক ৮০০ কল, মিনিটে ৮টা। আপনার key শুধু এই ডিভাইসে সেভ থাকে — আমাদের সার্ভারে পাঠানো হয় না।
+                </div>
+
+                <div style={{ background: '#0d1117', borderRadius: 10, padding: '12px 14px', border: `1px solid ${C.border}` }}>
+                  <div style={{ fontSize: 10, color: '#666', marginBottom: 6 }}>📊 Daily API Usage</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: usagePct >= 90 ? C.red : C.green, marginBottom: 6 }}>
+                    {usage.count} / {planLimit}
+                  </div>
+                  <div style={{ height: 5, borderRadius: 3, background: C.panel, overflow: 'hidden' }}>
+                    <div style={{ width: `${usagePct}%`, height: '100%', background: usagePct >= 90 ? C.red : C.gold, transition: 'width 0.3s' }} />
+                  </div>
+                  <div style={{ fontSize: 9, color: '#555', marginTop: 4 }}>Resets at local midnight</div>
                 </div>
               </div>
             )}
@@ -407,4 +550,4 @@ export default function App() {
       </div>
     </div>
   )
-  }
+                                          }
