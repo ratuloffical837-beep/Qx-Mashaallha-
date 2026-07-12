@@ -1,40 +1,76 @@
-// ══════════════════════════════════════════
-//   MASTER AI — SIGNAL ENGINE (7 Indicators)
-// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════
+//   MASTER AI — SIGNAL ENGINE (11 Indicators)
+//   Data Source: Twelve Data (REST API)
+// ══════════════════════════════════════════════════════════
 
-export const markets = [
-  { name: "EUR/USD",       id: "frxEURUSD",  tv: "FX:EURUSD" },
-  { name: "GBP/USD",       id: "frxGBPUSD",  tv: "FX:GBPUSD" },
-  { name: "USD/JPY",       id: "frxUSDJPY",  tv: "FX:USDJPY" },
-  { name: "AUD/USD",       id: "frxAUDUSD",  tv: "FX:AUDUSD" },
-  { name: "USD/CAD",       id: "frxUSDCAD",  tv: "FX:USDCAD" },
-  { name: "EUR/JPY",       id: "frxEURJPY",  tv: "FX:EURJPY" },
-  { name: "GBP/JPY",       id: "frxGBPJPY",  tv: "FX:GBPJPY" },
-  { name: "Gold",          id: "frxXAUUSD",  tv: "OANDA:XAUUSD" },
-  { name: "Bitcoin",       id: "cryBTCUSD",  tv: "BINANCE:BTCUSDT" },
-  { name: "Ethereum",      id: "cryETHUSD",  tv: "BINANCE:ETHUSDT" },
-  { name: "Nasdaq 100",    id: "OTCIXNDX",   tv: "CURRENCYCOM:US100" },
-  { name: "S&P 500",       id: "OTCSPC",     tv: "FOREXCOM:SPX500" },
-  { name: "Volatility 100",id: "R_100",      tv: "DERIV:R_100" },
-  { name: "Volatility 75", id: "R_75",       tv: "DERIV:R_75" },
-  { name: "EUR/GBP",       id: "frxEURGBP",  tv: "FX:EURGBP" },
-  { name: "AUD/JPY",       id: "frxAUDJPY",  tv: "FX:AUDJPY" },
-  { name: "EUR/AUD",       id: "frxEURAUD",  tv: "FX:EURAUD" },
-  { name: "USD/CHF",       id: "frxUSDCHF",  tv: "FX:USDCHF" },
-  { name: "Silver",        id: "frxXAGUSD",  tv: "OANDA:XAGUSD" },
-  { name: "Crude Oil",     id: "frxWTI",     tv: "TVC:USOIL" },
-  { name: "AUD/CAD",       id: "frxAUDCAD",  tv: "FX:AUDCAD" },
-  { name: "AUD/CHF",       id: "frxAUDCHF",  tv: "FX:AUDCHF" },
-  { name: "CHF/JPY",       id: "frxCHFJPY",  tv: "FX:CHFJPY" },
-  { name: "EUR/CHF",       id: "frxEURCHF",  tv: "FX:EURCHF" },
-  { name: "GBP/AUD",       id: "frxGBPAUD",  tv: "FX:GBPAUD" },
-  { name: "CAD/JPY",       id: "frxCADJPY",  tv: "FX:CADJPY" },
-  { name: "USD/CNY",       id: "frxUSDCNY",  tv: "FX:USDCNY" },
-  { name: "China A50",     id: "OTCIXCHINA", tv: "FX:CHINAA50" },
-  { name: "DAX 40",        id: "OTCIXDAX",   tv: "FOREXCOM:GRXEUR" },
+// ── Forex Market List (Twelve Data symbol format) ────────────
+export const forexMarkets = [
+  // Majors
+  { name: 'EUR/USD', td: 'EUR/USD', tv: 'FX:EURUSD', cat: 'Major' },
+  { name: 'GBP/USD', td: 'GBP/USD', tv: 'FX:GBPUSD', cat: 'Major' },
+  { name: 'USD/JPY', td: 'USD/JPY', tv: 'FX:USDJPY', cat: 'Major' },
+  { name: 'USD/CHF', td: 'USD/CHF', tv: 'FX:USDCHF', cat: 'Major' },
+  { name: 'USD/CAD', td: 'USD/CAD', tv: 'FX:USDCAD', cat: 'Major' },
+  { name: 'AUD/USD', td: 'AUD/USD', tv: 'FX:AUDUSD', cat: 'Major' },
+  { name: 'NZD/USD', td: 'NZD/USD', tv: 'FX:NZDUSD', cat: 'Major' },
+  // Crosses — EUR
+  { name: 'EUR/GBP', td: 'EUR/GBP', tv: 'FX:EURGBP', cat: 'Cross' },
+  { name: 'EUR/JPY', td: 'EUR/JPY', tv: 'FX:EURJPY', cat: 'Cross' },
+  { name: 'EUR/CHF', td: 'EUR/CHF', tv: 'FX:EURCHF', cat: 'Cross' },
+  { name: 'EUR/CAD', td: 'EUR/CAD', tv: 'FX:EURCAD', cat: 'Cross' },
+  { name: 'EUR/AUD', td: 'EUR/AUD', tv: 'FX:EURAUD', cat: 'Cross' },
+  { name: 'EUR/NZD', td: 'EUR/NZD', tv: 'FX:EURNZD', cat: 'Cross' },
+  // Crosses — GBP
+  { name: 'GBP/JPY', td: 'GBP/JPY', tv: 'FX:GBPJPY', cat: 'Cross' },
+  { name: 'GBP/CHF', td: 'GBP/CHF', tv: 'FX:GBPCHF', cat: 'Cross' },
+  { name: 'GBP/CAD', td: 'GBP/CAD', tv: 'FX:GBPCAD', cat: 'Cross' },
+  { name: 'GBP/AUD', td: 'GBP/AUD', tv: 'FX:GBPAUD', cat: 'Cross' },
+  { name: 'GBP/NZD', td: 'GBP/NZD', tv: 'FX:GBPNZD', cat: 'Cross' },
+  // Crosses — AUD
+  { name: 'AUD/JPY', td: 'AUD/JPY', tv: 'FX:AUDJPY', cat: 'Cross' },
+  { name: 'AUD/CHF', td: 'AUD/CHF', tv: 'FX:AUDCHF', cat: 'Cross' },
+  { name: 'AUD/CAD', td: 'AUD/CAD', tv: 'FX:AUDCAD', cat: 'Cross' },
+  { name: 'AUD/NZD', td: 'AUD/NZD', tv: 'FX:AUDNZD', cat: 'Cross' },
+  // Crosses — NZD
+  { name: 'NZD/JPY', td: 'NZD/JPY', tv: 'FX:NZDJPY', cat: 'Cross' },
+  { name: 'NZD/CHF', td: 'NZD/CHF', tv: 'FX:NZDCHF', cat: 'Cross' },
+  { name: 'NZD/CAD', td: 'NZD/CAD', tv: 'FX:NZDCAD', cat: 'Cross' },
+  // Crosses — CAD
+  { name: 'CAD/JPY', td: 'CAD/JPY', tv: 'FX:CADJPY', cat: 'Cross' },
+  { name: 'CAD/CHF', td: 'CAD/CHF', tv: 'FX:CADCHF', cat: 'Cross' },
+  // Crosses — CHF
+  { name: 'CHF/JPY', td: 'CHF/JPY', tv: 'FX:CHFJPY', cat: 'Cross' },
+  // Exotics
+  { name: 'USD/SGD', td: 'USD/SGD', tv: 'FX:USDSGD', cat: 'Exotic' },
+  { name: 'USD/HKD', td: 'USD/HKD', tv: 'FX:USDHKD', cat: 'Exotic' },
+  { name: 'USD/SEK', td: 'USD/SEK', tv: 'FX:USDSEK', cat: 'Exotic' },
+  { name: 'USD/NOK', td: 'USD/NOK', tv: 'FX:USDNOK', cat: 'Exotic' },
+  { name: 'USD/DKK', td: 'USD/DKK', tv: 'FX:USDDKK', cat: 'Exotic' },
+  { name: 'USD/MXN', td: 'USD/MXN', tv: 'FX:USDMXN', cat: 'Exotic' },
+  { name: 'USD/ZAR', td: 'USD/ZAR', tv: 'FX:USDZAR', cat: 'Exotic' },
+  { name: 'USD/TRY', td: 'USD/TRY', tv: 'FX:USDTRY', cat: 'Exotic' },
+  { name: 'USD/PLN', td: 'USD/PLN', tv: 'FX:USDPLN', cat: 'Exotic' },
+  { name: 'USD/HUF', td: 'USD/HUF', tv: 'FX:USDHUF', cat: 'Exotic' },
+  { name: 'USD/CZK', td: 'USD/CZK', tv: 'FX:USDCZK', cat: 'Exotic' },
+  { name: 'EUR/SEK', td: 'EUR/SEK', tv: 'FX:EURSEK', cat: 'Exotic' },
+  { name: 'EUR/NOK', td: 'EUR/NOK', tv: 'FX:EURNOK', cat: 'Exotic' },
+  { name: 'EUR/PLN', td: 'EUR/PLN', tv: 'FX:EURPLN', cat: 'Exotic' },
+  { name: 'EUR/TRY', td: 'EUR/TRY', tv: 'FX:EURTRY', cat: 'Exotic' },
+  { name: 'GBP/SEK', td: 'GBP/SEK', tv: 'FX:GBPSEK', cat: 'Exotic' },
+  { name: 'GBP/NOK', td: 'GBP/NOK', tv: 'FX:GBPNOK', cat: 'Exotic' },
+  { name: 'SGD/JPY', td: 'SGD/JPY', tv: 'FX:SGDJPY', cat: 'Exotic' },
+  { name: 'USD/INR', td: 'USD/INR', tv: 'FX:USDINR', cat: 'Exotic' },
+  { name: 'USD/THB', td: 'USD/THB', tv: 'FX:USDTHB', cat: 'Exotic' },
+  { name: 'USD/CNH', td: 'USD/CNH', tv: 'FX:USDCNH', cat: 'Exotic' },
 ]
 
-// ── Indicator math ────────────────────────────────────────────
+// Minimum candles needed for all indicators to compute reliably
+// (Ichimoku needs 52, MACD needs 35, EMA50 needs 50 → use 60 buffer)
+export const MIN_CANDLES = 60
+
+// ══════════════════════════════════════════════════════════
+//   CORE MATH HELPERS
+// ══════════════════════════════════════════════════════════
 
 const ema = (arr, p) => {
   if (arr.length < p) return null
@@ -111,121 +147,295 @@ const patternScore = (candles) => {
   const lw = Math.min(c0.o, c0.cl) - c0.l
   const uw = c0.h - Math.max(c0.o, c0.cl)
 
-  // Bullish Engulfing
   if (c0.bull && !c1.bull && c0.o <= c1.cl && c0.cl >= c1.o && c0.body > c1.body) return 2
-  // Bearish Engulfing
   if (!c0.bull && c1.bull && c0.o >= c1.cl && c0.cl <= c1.o && c0.body > c1.body) return -2
-  // Hammer
   if (lw > c0.body * 2 && uw < c0.body * 0.3) return 1
-  // Shooting Star
   if (uw > c0.body * 2 && lw < c0.body * 0.3) return -1
-  // Morning Star
   if (!c2.bull && c1.body < c2.body * 0.3 && c0.bull && c0.cl > (c2.o + c2.cl) / 2) return 2
-  // Evening Star
   if (c2.bull && c1.body < c2.body * 0.3 && !c0.bull && c0.cl < (c2.o + c2.cl) / 2) return -2
-  // 3 consecutive
   if (last.every(c => c.bull)) return 1
   if (last.every(c => !c.bull)) return -1
   return 0
 }
 
-// ── MASTER ENGINE ─────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+//   TOP-TIER INDICATORS (ADX, Supertrend, Ichimoku, Fractal2)
+// ══════════════════════════════════════════════════════════
+
+// ── ADX + DI (Wilder's smoothing, standard 14-period) ────────
+const calcADX = (candles, p = 14) => {
+  if (candles.length < p * 2 + 1) return null
+  const highs = candles.map(c => parseFloat(c.high))
+  const lows = candles.map(c => parseFloat(c.low))
+  const closes = candles.map(c => parseFloat(c.close))
+
+  const plusDM = [], minusDM = [], TRs = []
+  for (let i = 1; i < candles.length; i++) {
+    const upMove = highs[i] - highs[i - 1]
+    const downMove = lows[i - 1] - lows[i]
+    plusDM.push(upMove > downMove && upMove > 0 ? upMove : 0)
+    minusDM.push(downMove > upMove && downMove > 0 ? downMove : 0)
+    TRs.push(Math.max(
+      highs[i] - lows[i],
+      Math.abs(highs[i] - closes[i - 1]),
+      Math.abs(lows[i] - closes[i - 1])
+    ))
+  }
+
+  const wilderSmooth = (arr, period) => {
+    const out = [arr.slice(0, period).reduce((a, b) => a + b, 0)]
+    for (let i = period; i < arr.length; i++) {
+      out.push(out[out.length - 1] - out[out.length - 1] / period + arr[i])
+    }
+    return out
+  }
+
+  const sTR = wilderSmooth(TRs, p)
+  const sPlus = wilderSmooth(plusDM, p)
+  const sMinus = wilderSmooth(minusDM, p)
+
+  const plusDI = sPlus.map((v, i) => 100 * v / (sTR[i] || 1))
+  const minusDI = sMinus.map((v, i) => 100 * v / (sTR[i] || 1))
+  const dx = plusDI.map((v, i) => 100 * Math.abs(v - minusDI[i]) / ((v + minusDI[i]) || 1))
+
+  if (dx.length < p) return null
+  let adxVal = dx.slice(0, p).reduce((a, b) => a + b, 0) / p
+  for (let i = p; i < dx.length; i++) adxVal = (adxVal * (p - 1) + dx[i]) / p
+
+  return { adx: adxVal, plusDI: plusDI.at(-1), minusDI: minusDI.at(-1) }
+}
+
+// ── Supertrend (ATR period 10, multiplier 3 — industry standard) ──
+const calcSupertrend = (candles, period = 10, mult = 3) => {
+  if (candles.length < period + 2) return null
+  const highs = candles.map(c => parseFloat(c.high))
+  const lows = candles.map(c => parseFloat(c.low))
+  const closes = candles.map(c => parseFloat(c.close))
+
+  const trs = []
+  for (let i = 1; i < candles.length; i++) {
+    trs.push(Math.max(
+      highs[i] - lows[i],
+      Math.abs(highs[i] - closes[i - 1]),
+      Math.abs(lows[i] - closes[i - 1])
+    ))
+  }
+  let atrVal = trs.slice(0, period).reduce((a, b) => a + b, 0) / period
+  const atrSeries = [atrVal]
+  for (let i = period; i < trs.length; i++) {
+    atrVal = (atrVal * (period - 1) + trs[i]) / period
+    atrSeries.push(atrVal)
+  }
+
+  let trend = 1, finalUpper = 0, finalLower = 0
+  const offset = candles.length - atrSeries.length
+  for (let i = 0; i < atrSeries.length; i++) {
+    const idx = i + offset
+    const hl2 = (highs[idx] + lows[idx]) / 2
+    const bUpper = hl2 + mult * atrSeries[i]
+    const bLower = hl2 - mult * atrSeries[i]
+    if (i === 0) { finalUpper = bUpper; finalLower = bLower; continue }
+    const prevClose = closes[idx - 1]
+    finalUpper = (bUpper < finalUpper || prevClose > finalUpper) ? bUpper : finalUpper
+    finalLower = (bLower > finalLower || prevClose < finalLower) ? bLower : finalLower
+    if (trend === 1 && closes[idx] < finalLower) trend = -1
+    else if (trend === -1 && closes[idx] > finalUpper) trend = 1
+  }
+  return { trend, value: trend === 1 ? finalLower : finalUpper }
+}
+
+// ── Ichimoku Cloud (standard 9/26/52) ─────────────────────────
+const calcIchimoku = (candles) => {
+  if (candles.length < 52) return null
+  const highs = candles.map(c => parseFloat(c.high))
+  const lows = candles.map(c => parseFloat(c.low))
+  const close = parseFloat(candles.at(-1).close)
+  const periodHL = (p) => (Math.max(...highs.slice(-p)) + Math.min(...lows.slice(-p))) / 2
+
+  const tenkan = periodHL(9)
+  const kijun = periodHL(26)
+  const spanA = (tenkan + kijun) / 2
+  const spanB = periodHL(52)
+
+  return {
+    tenkan, kijun, spanA, spanB,
+    aboveCloud: close > Math.max(spanA, spanB),
+    belowCloud: close < Math.min(spanA, spanB),
+    tkCross: tenkan > kijun ? 1 : tenkan < kijun ? -1 : 0,
+  }
+}
+
+// ── Fractal 2 (Williams 5-bar fractal, n=2 each side) ─────────
+// Confirmed only — needs 2 candles AFTER the pivot to close, so it
+// never repaints. A confirmed high-fractal = reversal DOWN signal
+// (red arrow above candle). A confirmed low-fractal = reversal UP
+// signal (green arrow below candle).
+const calcFractal2 = (candles, n = 2) => {
+  if (candles.length < n * 2 + 1) return null
+  const highs = candles.map(c => parseFloat(c.high))
+  const lows = candles.map(c => parseFloat(c.low))
+
+  // Most recently CONFIRMED pivot index (needs n candles after it)
+  const idx = candles.length - 1 - n
+  if (idx < n) return null
+
+  let isHigh = true, isLow = true
+  for (let i = 1; i <= n; i++) {
+    if (!(highs[idx] > highs[idx - i] && highs[idx] > highs[idx + i])) isHigh = false
+    if (!(lows[idx] < lows[idx - i] && lows[idx] < lows[idx + i])) isLow = false
+  }
+
+  // How many candles ago this fractal confirmed (0 = just confirmed now)
+  const age = candles.length - 1 - (idx + n)
+
+  if (isHigh) return { type: 'high', age }
+  if (isLow) return { type: 'low', age }
+  return null
+}
+
+// ══════════════════════════════════════════════════════════
+//   MASTER SIGNAL ENGINE
+// ══════════════════════════════════════════════════════════
 export const runSignalEngine = (candles) => {
   const EMPTY = { direction: null, strength: 50, breakdown: {}, confidence: 0 }
-  if (candles.length < 40) return EMPTY
+  if (!candles || candles.length < MIN_CANDLES) return EMPTY
 
   const closes = candles.map(c => parseFloat(c.close))
   const last = closes[closes.length - 1]
   let score = 0, maxScore = 0
-  const bd = {}
+  const bd = {} // ordered object — insertion order = display order
 
-  // 1. EMA 8/21 — weight 20
+  // ── TOP TIER: ADX → Supertrend → Ichimoku → Fractal 2 ───────
+
+  // 1. ADX + DI — weight 16
+  const ax = calcADX(candles, 14)
+  if (ax) {
+    let v = 0
+    if (ax.adx > 25) v = ax.plusDI > ax.minusDI ? 16 : -16
+    else if (ax.adx > 20) v = ax.plusDI > ax.minusDI ? 8 : -8
+    score += v; maxScore += 16
+    bd[`ADX ${ax.adx.toFixed(0)}`] = v > 0 ? '↑ BULL' : v < 0 ? '↓ BEAR' : '→ WEAK'
+  }
+
+  // 2. Supertrend — weight 16
+  const st2 = calcSupertrend(candles, 10, 3)
+  if (st2) {
+    const v = st2.trend === 1 ? 16 : -16
+    score += v; maxScore += 16
+    bd['Supertrend'] = v > 0 ? '↑ BULL' : '↓ BEAR'
+  }
+
+  // 3. Ichimoku Cloud — weight 16
+  const ich = calcIchimoku(candles)
+  if (ich) {
+    let v = 0
+    if (ich.aboveCloud) v = 16
+    else if (ich.belowCloud) v = -16
+    else v = ich.tkCross * 4 // inside cloud → weak TK-cross bias only
+    score += v; maxScore += 16
+    bd['Ichimoku'] = ich.aboveCloud ? '↑ BULL' : ich.belowCloud ? '↓ BEAR' : '→ IN CLOUD'
+  }
+
+  // 4. Fractal 2 — weight 16 (decays with age so old pivots don't dominate)
+  const fr = calcFractal2(candles, 2)
+  if (fr && fr.age <= 5) {
+    const decay = 1 - fr.age * 0.15 // full weight at age 0, fades out by age ~6
+    const v = fr.type === 'low' ? 16 * decay : -16 * decay
+    score += v; maxScore += 16
+    bd['Fractal 2'] = fr.type === 'low' ? '↑ BULL (▲ সবুজ)' : '↓ BEAR (▼ লাল)'
+  } else {
+    bd['Fractal 2'] = '→ NO SIGNAL'
+  }
+
+  // ── LOWER TIER: original 7 indicators ───────────────────────
+
+  // 5. EMA 8/21 — weight 14
   const e8 = ema(closes, 8), e21 = ema(closes, 21)
   if (e8 && e21) {
     const gap = Math.abs((e8 - e21) / e21) * 100
-    const w = Math.min(20, gap * 300)
+    const w = Math.min(14, gap * 250)
     const v = e8 > e21 ? w : -w
-    score += v; maxScore += 20
+    score += v; maxScore += 14
     bd['EMA 8/21'] = v > 0 ? '↑ BULL' : '↓ BEAR'
   }
 
-  // 2. EMA 21/50 trend filter — weight 15
+  // 6. EMA 21/50 — weight 12
   const e50 = ema(closes, 50)
   if (e21 && e50) {
-    const v = e21 > e50 ? 15 : -15
-    score += v; maxScore += 15
+    const v = e21 > e50 ? 12 : -12
+    score += v; maxScore += 12
     bd['EMA 21/50'] = v > 0 ? '↑ BULL' : '↓ BEAR'
   }
 
-  // 3. RSI — weight 20
+  // 7. RSI — weight 14
   const r = rsi(closes, 14)
   if (r !== null) {
     let v = 0
-    if (r < 25) v = 20
-    else if (r < 35) v = 13
-    else if (r < 45) v = 5
-    else if (r > 75) v = -20
-    else if (r > 65) v = -13
-    else if (r > 55) v = -5
-    score += v; maxScore += 20
-    bd[`RSI ${r.toFixed(0)}`] = v > 2 ? '↑ BULL' : v < -2 ? '↓ BEAR' : '→ NEUTRAL'
+    if (r < 25) v = 14
+    else if (r < 35) v = 9
+    else if (r < 45) v = 3
+    else if (r > 75) v = -14
+    else if (r > 65) v = -9
+    else if (r > 55) v = -3
+    score += v; maxScore += 14
+    bd[`RSI ${r.toFixed(0)}`] = v > 1 ? '↑ BULL' : v < -1 ? '↓ BEAR' : '→ NEUTRAL'
   }
 
-  // 4. Bollinger Bands — weight 18
+  // 8. Bollinger Bands — weight 12
   const b = bb(closes, 20)
   if (b) {
     const pct = (last - b.lower) / (b.upper - b.lower)
     let v = 0
-    if (pct < 0.05) v = 18
-    else if (pct < 0.2) v = 10
-    else if (pct < 0.4) v = 4
-    else if (pct > 0.95) v = -18
-    else if (pct > 0.8) v = -10
-    else if (pct > 0.6) v = -4
-    score += v; maxScore += 18
+    if (pct < 0.05) v = 12
+    else if (pct < 0.2) v = 7
+    else if (pct < 0.4) v = 3
+    else if (pct > 0.95) v = -12
+    else if (pct > 0.8) v = -7
+    else if (pct > 0.6) v = -3
+    score += v; maxScore += 12
     bd['Bollinger'] = v > 0 ? '↑ BULL' : v < 0 ? '↓ BEAR' : '→ MID'
   }
 
-  // 5. MACD — weight 18
+  // 9. MACD — weight 12
   const m = macdFull(closes)
   if (m) {
-    const cv = m.line > m.signal ? 10 : -10
-    const hv = m.hist > 0 ? 8 : -8
-    score += cv + hv; maxScore += 18
+    const cv = m.line > m.signal ? 7 : -7
+    const hv = m.hist > 0 ? 5 : -5
+    score += cv + hv; maxScore += 12
     bd['MACD'] = (cv + hv) > 0 ? '↑ BULL' : '↓ BEAR'
   }
 
-  // 6. Stochastic — weight 15
+  // 10. Stochastic — weight 10
   const st = stoch(candles, 14)
   if (st !== null) {
     let v = 0
-    if (st < 20) v = 15
-    else if (st < 35) v = 8
-    else if (st > 80) v = -15
-    else if (st > 65) v = -8
-    score += v; maxScore += 15
+    if (st < 20) v = 10
+    else if (st < 35) v = 5
+    else if (st > 80) v = -10
+    else if (st > 65) v = -5
+    score += v; maxScore += 10
     bd[`Stoch ${st.toFixed(0)}`] = v > 0 ? '↑ BULL' : v < 0 ? '↓ BEAR' : '→ NEUTRAL'
   }
 
-  // 7. Candle Pattern — weight 14
+  // 11. Candle Pattern — weight 10
   const pat = patternScore(candles)
   if (pat !== 0) {
-    const v = pat * 7
-    score += v; maxScore += 14
+    const v = pat * 5
+    score += v; maxScore += 10
     bd['Pattern'] = v > 0 ? '↑ BULL' : '↓ BEAR'
   } else {
     bd['Pattern'] = '→ NEUTRAL'
   }
 
-  // ATR volatility gate
+  // ── ATR volatility gate (blocks signals in dead/flat markets) ──
   const a = atr(candles, 14)
   const s20 = sma(closes, 20)
   const atrPct = a && s20 ? (a / s20) * 100 : 999
   if (atrPct < 0.015) {
-    return { direction: null, strength: 50, breakdown: { 'ATR Gate': '⛔ কম ভোলাটিলিটি' }, confidence: 0 }
+    return { direction: null, strength: 50, breakdown: { '⛔ ATR Gate': 'কম ভোলাটিলিটি' }, confidence: 0 }
   }
 
-  // Final
+  // ── Final scoring ────────────────────────────────────────────
   if (maxScore === 0) return EMPTY
   const strength = Math.round(((score / maxScore) + 1) / 2 * 100)
   const bulls = Object.values(bd).filter(v => v.includes('BULL')).length
@@ -238,4 +448,4 @@ export const runSignalEngine = (candles) => {
   else if (strength <= 35 && confidence >= 70) direction = 'PUT'
 
   return { direction, strength, breakdown: bd, confidence }
-   }
+  }
