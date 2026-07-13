@@ -140,7 +140,7 @@ export default function App() {
         if (typeof data.current_usage === 'number') {
           setUsage(prev => ({ ...prev, count: data.current_usage }))
         }
-        if (typeof data.plan_limit === 'number') setPlanLimit(data.plan_limit)
+        setPlanLimit(800);
       }
     } catch (_) {
       setKeyValid(false)
