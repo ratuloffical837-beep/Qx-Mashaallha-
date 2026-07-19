@@ -1,3 +1,7 @@
+import RulesPage from './RulesPage'
+// state: const [showRules, setShowRules] = useState(false)
+// settings বাটনের পাশে: <button onClick={() => setShowRules(true)}>📜 Rules</button>
+// নিচে: {showRules && <RulesPage onClose={() => setShowRules(false)} />}
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from './firebase'
 import { doc, onSnapshot } from 'firebase/firestore'
