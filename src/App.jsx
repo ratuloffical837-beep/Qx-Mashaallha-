@@ -37,7 +37,7 @@ const TRADE_SECONDS = 60         // 1-minute candle prediction
 const FREE_DAILY_SIGNAL_LIMIT = 3
 
 // ── Social links (footer) ───────────────────────────────────────
-const CHANNEL_LINK = 'https://t.me/ratulhossain424'
+const CHANNEL_LINK = 'https://t.me/ratulhossain4241'
 const GROUP_LINK   = 'https://t.me/ratulhossain424'
 const CHAT_LINK    = 'https://t.me/ratulhossain56'
 
