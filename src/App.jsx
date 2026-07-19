@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from './firebase'
 import { doc, onSnapshot } from 'firebase/firestore'
 import PaymentPage from './PaymentPage'
-import RulesPage from './initDataUnsafe forexMarkets, runSignalEngine, MIN_CANDLES } from './signalEngine'
+import RulesPage from './RulesPage'
+import { forexMarkets, runSignalEngine, MIN_CANDLES } from './signalEngine'
 
 // ── Telegram WebApp ───────────────────────────────────────────
 const tg = window.Telegram?.WebApp
@@ -65,10 +66,13 @@ const bumpStoredUsage = () => {
 }
 
 // ── localStorage helpers (Free-tier daily signal count) ────────
+// Defensive: any malformed/unexpected shape in localStorage is treated
+// as "no usage yet today" rather than accidentally blocking the user.
 const getFreeUsage = () => {
   try {
     const raw = JSON.parse(localStorage.getItem('free_signal_usage'))
-    if (raw && raw.date === localDateStr()) return raw
+    const validShape = raw && raw.date === localDateStr() && Number.isFinite(raw.count) && raw.count >= 0
+    if (validShape) return raw
   } catch (_) {}
   const fresh = { date: localDateStr(), count: 0 }
   localStorage.setItem('free_signal_usage', JSON.stringify(fresh))
@@ -80,6 +84,15 @@ const bumpFreeUsage = () => {
   u.count += 1
   localStorage.setItem('free_signal_usage', JSON.stringify(u))
   return u
+}
+
+// Dev/testing helper — exposed on window so you can reset your own free
+// quota from the browser console while testing: window.__resetFreeSignals()
+if (typeof window !== 'undefined') {
+  window.__resetFreeSignals = () => {
+    localStorage.removeItem('free_signal_usage')
+    console.log('✅ ফ্রি সিগনাল কোটা রিসেট হয়েছে — পেজ রিলোড করুন')
+  }
 }
 
 export default function App() {
@@ -258,6 +271,7 @@ export default function App() {
     if (!isPremium) {
       const fu = getFreeUsage()
       if (fu.count >= FREE_DAILY_SIGNAL_LIMIT) {
+        console.log(`ফ্রি লিমিট গেট: আজকের (${fu.date}) ব্যবহৃত সিগনাল ${fu.count}/${FREE_DAILY_SIGNAL_LIMIT} — টেস্টের সময় রিসেট করতে window.__resetFreeSignals() রান করুন।`)
         setConnStatus('ফ্রি লিমিট শেষ ❌')
         setShowPaymentModal(true)
         return
@@ -677,4 +691,4 @@ export default function App() {
 
     </div>
   )
-  }
+    }
