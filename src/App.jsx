@@ -2,8 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from './firebase'
 import { doc, onSnapshot } from 'firebase/firestore'
 import PaymentPage from './PaymentPage'
-import RulesPage from './RulesPage'
-import { forexMarkets, runSignalEngine, MIN_CANDLES } from './signalEngine'
+import RulesPage from './initDataUnsafe forexMarkets, runSignalEngine, MIN_CANDLES } from './signalEngine'
 
 // ── Telegram WebApp ───────────────────────────────────────────
 const tg = window.Telegram?.WebApp
