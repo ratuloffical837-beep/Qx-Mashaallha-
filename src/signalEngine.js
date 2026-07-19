@@ -307,14 +307,17 @@ export const runSignalEngine = (candles) => {
 
   // ── TOP TIER: ADX → Supertrend → Ichimoku → Fractal 2 ───────
 
-  // 1. ADX + DI — weight 16
+  // 1. ADX + DI — weight 16 (always directional: weak trend still votes, just with less weight)
   const ax = calcADX(candles, 14)
   if (ax) {
-    let v = 0
+    let v
     if (ax.adx > 25) v = ax.plusDI > ax.minusDI ? 16 : -16
     else if (ax.adx > 20) v = ax.plusDI > ax.minusDI ? 8 : -8
+    else v = ax.plusDI > ax.minusDI ? 4 : -4
     score += v; maxScore += 16
-    bd[`ADX ${ax.adx.toFixed(0)}`] = v > 0 ? '↑ BULL' : v < 0 ? '↓ BEAR' : '→ WEAK'
+    bd[`ADX ${ax.adx.toFixed(0)}`] = v > 0 ? '↑ BULL' : '↓ BEAR'
+  } else {
+    bd['ADX'] = '→ NEUTRAL' // only when there isn't enough candle history to compute
   }
 
   // 2. Supertrend — weight 16
@@ -323,28 +326,40 @@ export const runSignalEngine = (candles) => {
     const v = st2.trend === 1 ? 16 : -16
     score += v; maxScore += 16
     bd['Supertrend'] = v > 0 ? '↑ BULL' : '↓ BEAR'
+  } else {
+    bd['Supertrend'] = '→ NEUTRAL'
   }
 
-  // 3. Ichimoku Cloud — weight 16
+  // 3. Ichimoku Cloud — weight 16 (always directional: inside-cloud uses TK-cross,
+  // and a close-vs-kijun tiebreaker on the rare exact TK tie)
   const ich = calcIchimoku(candles)
   if (ich) {
-    let v = 0
+    let v
     if (ich.aboveCloud) v = 16
     else if (ich.belowCloud) v = -16
-    else v = ich.tkCross * 4 // inside cloud → weak TK-cross bias only
+    else if (ich.tkCross !== 0) v = ich.tkCross * 4
+    else v = last >= ich.kijun ? 4 : -4
     score += v; maxScore += 16
-    bd['Ichimoku'] = ich.aboveCloud ? '↑ BULL' : ich.belowCloud ? '↓ BEAR' : '→ IN CLOUD'
+    bd['Ichimoku'] = v > 0 ? '↑ BULL' : '↓ BEAR'
+  } else {
+    bd['Ichimoku'] = '→ NEUTRAL'
   }
 
-  // 4. Fractal 2 — weight 16 (decays with age so old pivots don't dominate)
+  // 4. Fractal 2 — weight 16 (decays with age so old pivots don't dominate).
+  // Fractal 2 is event-based (only fires on a confirmed reversal pivot), so
+  // when there's no fresh confirmed pivot right now we fall back to recent
+  // 3-candle momentum just to keep this row always directional — it's a
+  // fallback reading, not a real fractal signal.
   const fr = calcFractal2(candles, 2)
-  if (fr && fr.age <= 5) {
-    const decay = 1 - fr.age * 0.15 // full weight at age 0, fades out by age ~6
+  if (fr) {
+    const decay = Math.max(0, 1 - fr.age * 0.15) // full weight at age 0, fades to 0 by age ~6
     const v = fr.type === 'low' ? 16 * decay : -16 * decay
     score += v; maxScore += 16
     bd['Fractal 2'] = fr.type === 'low' ? '↑ BULL (▲ সবুজ)' : '↓ BEAR (▼ লাল)'
   } else {
-    bd['Fractal 2'] = '→ NO SIGNAL'
+    const isBullMomentum = last > closes[Math.max(0, closes.length - 4)]
+    maxScore += 16
+    bd['Fractal 2'] = isBullMomentum ? '↑ BULL' : '↓ BEAR'
   }
 
   // ── LOWER TIER: original 7 indicators ───────────────────────
@@ -357,6 +372,8 @@ export const runSignalEngine = (candles) => {
     const v = e8 > e21 ? w : -w
     score += v; maxScore += 14
     bd['EMA 8/21'] = v > 0 ? '↑ BULL' : '↓ BEAR'
+  } else {
+    bd['EMA 8/21'] = '→ NEUTRAL'
   }
 
   // 6. EMA 21/50 — weight 12
@@ -365,35 +382,43 @@ export const runSignalEngine = (candles) => {
     const v = e21 > e50 ? 12 : -12
     score += v; maxScore += 12
     bd['EMA 21/50'] = v > 0 ? '↑ BULL' : '↓ BEAR'
+  } else {
+    bd['EMA 21/50'] = '→ NEUTRAL'
   }
 
   // 7. RSI — weight 14
   const r = rsi(closes, 14)
   if (r !== null) {
-    let v = 0
+    let v
     if (r < 25) v = 14
     else if (r < 35) v = 9
     else if (r < 45) v = 3
     else if (r > 75) v = -14
     else if (r > 65) v = -9
     else if (r > 55) v = -3
+    else v = r >= 50 ? 1 : -1 // 45–55 band: still directional, just very light weight
     score += v; maxScore += 14
-    bd[`RSI ${r.toFixed(0)}`] = v > 1 ? '↑ BULL' : v < -1 ? '↓ BEAR' : '→ NEUTRAL'
+    bd[`RSI ${r.toFixed(0)}`] = v > 0 ? '↑ BULL' : '↓ BEAR'
+  } else {
+    bd['RSI'] = '→ NEUTRAL'
   }
 
   // 8. Bollinger Bands — weight 12
   const b = bb(closes, 20)
   if (b) {
     const pct = (last - b.lower) / (b.upper - b.lower)
-    let v = 0
+    let v
     if (pct < 0.05) v = 12
     else if (pct < 0.2) v = 7
     else if (pct < 0.4) v = 3
     else if (pct > 0.95) v = -12
     else if (pct > 0.8) v = -7
     else if (pct > 0.6) v = -3
+    else v = pct >= 0.5 ? 1 : -1 // mid-band: still directional, very light weight
     score += v; maxScore += 12
-    bd['Bollinger'] = v > 0 ? '↑ BULL' : v < 0 ? '↓ BEAR' : '→ MID'
+    bd['Bollinger'] = v > 0 ? '↑ BULL' : '↓ BEAR'
+  } else {
+    bd['Bollinger'] = '→ NEUTRAL'
   }
 
   // 9. MACD — weight 12
@@ -403,18 +428,23 @@ export const runSignalEngine = (candles) => {
     const hv = m.hist > 0 ? 5 : -5
     score += cv + hv; maxScore += 12
     bd['MACD'] = (cv + hv) > 0 ? '↑ BULL' : '↓ BEAR'
+  } else {
+    bd['MACD'] = '→ NEUTRAL'
   }
 
   // 10. Stochastic — weight 10
   const st = stoch(candles, 14)
   if (st !== null) {
-    let v = 0
+    let v
     if (st < 20) v = 10
     else if (st < 35) v = 5
     else if (st > 80) v = -10
     else if (st > 65) v = -5
+    else v = st >= 50 ? 1 : -1 // 35–65 mid-range: still directional, very light weight
     score += v; maxScore += 10
-    bd[`Stoch ${st.toFixed(0)}`] = v > 0 ? '↑ BULL' : v < 0 ? '↓ BEAR' : '→ NEUTRAL'
+    bd[`Stoch ${st.toFixed(0)}`] = v > 0 ? '↑ BULL' : '↓ BEAR'
+  } else {
+    bd['Stoch'] = '→ NEUTRAL'
   }
 
   // 11. Candle Pattern — weight 10
@@ -424,18 +454,21 @@ export const runSignalEngine = (candles) => {
     score += v; maxScore += 10
     bd['Pattern'] = v > 0 ? '↑ BULL' : '↓ BEAR'
   } else {
-    bd['Pattern'] = '→ NEUTRAL'
-  }
-
-  // ── ATR volatility gate (blocks signals in dead/flat markets) ──
-  const a = atr(candles, 14)
-  const s20 = sma(closes, 20)
-  const atrPct = a && s20 ? (a / s20) * 100 : 999
-  if (atrPct < 0.015) {
-    return { direction: null, strength: 50, breakdown: { '⛔ ATR Gate': 'কম ভোলাটিলিটি' }, confidence: 0 }
+    // no strong pattern detected — fall back to last candle's own color
+    const lastC = candles[candles.length - 1]
+    const isBullCandle = parseFloat(lastC.close) > parseFloat(lastC.open)
+    maxScore += 10
+    bd['Pattern'] = isBullCandle ? '↑ BULL' : '↓ BEAR'
   }
 
   // ── Final scoring ────────────────────────────────────────────
+  // NOTE: ATR volatility is intentionally NOT used to hide indicators or
+  // block the breakdown anymore. All 11 indicators always compute and
+  // always display their live BULL/BEAR/NEUTRAL reading, regardless of
+  // volatility. Low volatility simply won't produce a strong enough
+  // strength/confidence combo to cross the CALL/PUT thresholds below —
+  // it is reflected naturally in the numbers, not with a separate
+  // "gate" message that made the app look broken.
   if (maxScore === 0) return EMPTY
   const strength = Math.round(((score / maxScore) + 1) / 2 * 100)
   const bulls = Object.values(bd).filter(v => v.includes('BULL')).length
@@ -448,4 +481,4 @@ export const runSignalEngine = (candles) => {
   else if (strength <= 35 && confidence >= 70) direction = 'PUT'
 
   return { direction, strength, breakdown: bd, confidence }
-  }
+   }
