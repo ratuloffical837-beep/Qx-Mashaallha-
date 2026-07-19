@@ -21,6 +21,13 @@ const C = {
   green: '#0ecb81', red: '#f6465d', gold: '#f3ba2f', blue: '#60a5fa',
 }
 
+const socialBtnStyle = {
+  flex: 1, padding: '9px 4px', borderRadius: 8,
+  background: '#1a2744', color: '#60a5fa',
+  fontWeight: 700, fontSize: 10.5, border: '1px solid #60a5fa33',
+  cursor: 'pointer',
+}
+
 // ── Twelve Data config ───────────────────────────────────────
 const TD_BASE = 'https://api.twelvedata.com'
 const CANDLE_COUNT = 150        // history pulled per signal (well under 5000-point cap)
@@ -29,6 +36,11 @@ const TRADE_SECONDS = 60         // 1-minute candle prediction
 
 // ── Free tier config ──────────────────────────────────────────
 const FREE_DAILY_SIGNAL_LIMIT = 3
+
+// ── Social links (footer) ───────────────────────────────────────
+const CHANNEL_LINK = 'https://t.me/ratulhossain424'
+const GROUP_LINK   = 'https://t.me/ratulhossain424'
+const CHAT_LINK    = 'https://t.me/ratulhossain56'
 
 // ── localStorage helpers (Twelve Data usage) ──────────────────
 const localDateStr = () => {
@@ -643,6 +655,13 @@ export default function App() {
             )}
           </>
         )}
+
+        {/* ── SOCIAL FOOTER — small, bottom of app ── */}
+        <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+          <button onClick={() => window.open(CHANNEL_LINK, '_blank')} style={socialBtnStyle}>📢 চ্যানেল</button>
+          <button onClick={() => window.open(GROUP_LINK, '_blank')} style={socialBtnStyle}>👥 গ্রুপ</button>
+          <button onClick={() => window.open(CHAT_LINK, '_blank')} style={socialBtnStyle}>💬 চ্যাট</button>
+        </div>
       </div>
 
       {/* ── UPGRADE / PAYMENT MODAL ── */}
@@ -659,4 +678,4 @@ export default function App() {
 
     </div>
   )
-                                      }
+  }
