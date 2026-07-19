@@ -37,9 +37,13 @@ app.get('/', (req, res) => res.send('Master AI Backend Online ✅'))
 // ── Frontend থেকে payment notification ────────────────────────
 app.post('/api/notify-payment', async (req, res) => {
   try {
-    const { userId, name, username, method, amount, txId } = req.body
+    const { userId, name, username, method, senderNumber, amount, txId, promoCode } = req.body
 
     if (!userId || !txId) return res.status(400).json({ ok: false, error: 'Missing fields' })
+
+    const promoLine = promoCode
+      ? `🎟️ প্রমো কোড: <code>${promoCode}</code>`
+      : `🎟️ প্রমো কোড: <i>No promo code</i>`
 
     const msg =
       `💳 <b>নতুন পেমেন্ট রিকোয়েস্ট</b>\n\n` +
@@ -48,7 +52,9 @@ app.post('/api/notify-payment', async (req, res) => {
       (username ? `📎 Username: @${username}\n` : ``) +
       `💰 পরিমাণ: <b>৳${amount}</b>\n` +
       `📱 মেথড: <b>${method}</b>\n` +
-      `🔑 TrxID: <code>${txId}</code>`
+      `☎️ প্রেরক নম্বর: <code>${senderNumber || 'N/A'}</code>\n` +
+      `🔑 TrxID: <code>${txId}</code>\n` +
+      `${promoLine}`
 
     await tg('sendMessage', {
       chat_id: ADMIN_ID,
@@ -113,7 +119,7 @@ app.post(`/webhook/${WH_SECRET}`, async (req, res) => {
       // ইউজারকে জানাও
       await tg('sendMessage', {
         chat_id: userId,
-        text: `✅ <b>পেমেন্ট কনফার্ম!</b>\n\nআপনার Master AI সাবস্ক্রিপশন সক্রিয় হয়েছে। 🎉\nমেয়াদ: ${expiresAt.toLocaleDateString('bn-BD')} পর্যন্ত`,
+        text: `✅ <b>পেমেন্ট কনফার্ম!</b>\n\nআপনার প্রিমিয়াম সাবস্ক্রিপশন সক্রিয় হয়েছে। 🎉\nমেয়াদ: ${expiresAt.toLocaleDateString('bn-BD')} পর্যন্ত`,
         parse_mode: 'HTML',
       }).catch(() => {})
     } catch (e) {
@@ -132,7 +138,7 @@ app.post(`/webhook/${WH_SECRET}`, async (req, res) => {
 
       await tg('sendMessage', {
         chat_id: userId,
-        text: `❌ <b>পেমেন্ট রিজেক্ট</b>\n\nআপনার পেমেন্ট যাচাই হয়নি।\nসঠিক ট্রানজেকশন আইডি দিয়ে আবার পেমেন্ট করুন।`,
+        text: `❌ <b>পেমেন্ট রিজেক্ট</b>\n\nআপনার পেমেন্ট যাচাই হয়নি।\nসঠিক তথ্য দিয়ে আবার পেমেন্ট করুন।`,
         parse_mode: 'HTML',
       }).catch(() => {})
     } catch (e) {
@@ -164,7 +170,7 @@ app.post(`/webhook/${WH_SECRET}`, async (req, res) => {
 
       await tg('sendMessage', {
         chat_id: chatId,
-        text: `👥 <b>Active Users (${users.length} জন)</b>\n\n${lines}`,
+        text: `👥 <b>Active Premium Users (${users.length} জন)</b>\n\n${lines}`,
         parse_mode: 'HTML',
         reply_markup: { inline_keyboard: keyboard },
       })
@@ -185,7 +191,7 @@ app.post(`/webhook/${WH_SECRET}`, async (req, res) => {
 
       await tg('sendMessage', {
         chat_id: userId,
-        text: `⚠️ <b>সাবস্ক্রিপশন শেষ</b>\n\nআপনার অ্যাক্সেস বন্ধ করা হয়েছে।\nআবার পেমেন্ট করলে অ্যাক্সেস পাবেন।`,
+        text: `⚠️ <b>প্রিমিয়াম মেয়াদ শেষ</b>\n\nআপনার প্রিমিয়াম অ্যাক্সেস বন্ধ করা হয়েছে — এখন থেকে ফ্রি টায়ারে ফিরিয়ে আনা হয়েছে।\nআবার পেমেন্ট করলে প্রিমিয়াম ফিরে পাবেন।`,
         parse_mode: 'HTML',
       }).catch(() => {})
     } catch (e) {
