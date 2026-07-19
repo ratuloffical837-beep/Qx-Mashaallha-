@@ -390,4 +390,4 @@ const s = {
     fontWeight: 700, fontSize: 10.5, border: '1px solid #60a5fa33',
     cursor: 'pointer',
   },
-        }
+  }
