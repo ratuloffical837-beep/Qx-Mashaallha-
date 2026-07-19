@@ -5,7 +5,9 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 // ── আপনার তথ্য ────────────────────────────────────────────────
 const BKASH_NUMBER    = '01725218874'
 const NAGAD_NUMBER    = '01725218874'
-const SUPPORT_LINK    = 'https://t.me/ratulhossain56'
+const CHANNEL_LINK    = 'https://t.me/ratulhossain4241'
+const GROUP_LINK      = 'https://t.me/ratulhossain424'
+const CHAT_LINK       = 'https://t.me/ratulhossain56'
 const FULL_PRICE      = 1500
 const PROMO_PRICE     = 1000
 const PROMO_CODE      = 'RTX4241'
@@ -124,9 +126,7 @@ export default function PaymentPage({ tgUser, status, onClose }) {
               আপনার পেমেন্ট যাচাই হলে প্রিমিয়াম অ্যাক্টিভ হবে।{'\n'}
               সাধারণত ১–৩ ঘণ্টার মধ্যে কনফার্ম হয়। এই সময় আপনি ফ্রি টায়ারেই অ্যাপ ব্যবহার চালিয়ে যেতে পারবেন।
             </div>
-            <button onClick={() => window.open(SUPPORT_LINK, '_blank')} style={s.supportBtnLarge}>
-              💬 সাপোর্টে যোগাযোগ করুন
-            </button>
+            <SocialFooter />
           </div>
         </div>
       </div>
@@ -159,6 +159,7 @@ export default function PaymentPage({ tgUser, status, onClose }) {
             txId={txId} setTxId={setTxId} amount={amount}
             loading={loading} error={error} handleSubmit={handleSubmit}
           />
+          <SocialFooter />
         </div>
       </div>
     )
@@ -213,10 +214,7 @@ export default function PaymentPage({ tgUser, status, onClose }) {
           loading={loading} error={error} handleSubmit={handleSubmit}
         />
 
-        {/* Customer support button */}
-        <button onClick={() => window.open(SUPPORT_LINK, '_blank')} style={s.supportBtnLarge}>
-          💬 Customer Support
-        </button>
+        <SocialFooter />
       </div>
     </div>
   )
@@ -249,6 +247,17 @@ function PromoBox({ promoInput, setPromoInput, promoApplied, applyPromo, removeP
           🎉 প্রমো কোড প্রয়োগ হয়েছে! এখন পে করতে হবে ৳{amount}
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Small footer: Channel / Group / Chat (used everywhere) ─────
+function SocialFooter() {
+  return (
+    <div style={{ display: 'flex', gap: 6, marginTop: 14 }}>
+      <button onClick={() => window.open(CHANNEL_LINK, '_blank')} style={s.socialBtn}>📢 চ্যানেল</button>
+      <button onClick={() => window.open(GROUP_LINK, '_blank')} style={s.socialBtn}>👥 গ্রুপ</button>
+      <button onClick={() => window.open(CHAT_LINK, '_blank')} style={s.socialBtn}>💬 চ্যাট</button>
     </div>
   )
 }
@@ -375,4 +384,10 @@ const s = {
     fontWeight: 700, fontSize: 13, border: '1px solid #60a5fa44',
     cursor: 'pointer', marginTop: 4,
   },
-  }
+  socialBtn: {
+    flex: 1, padding: '9px 4px', borderRadius: 8,
+    background: '#1a2744', color: '#60a5fa',
+    fontWeight: 700, fontSize: 10.5, border: '1px solid #60a5fa33',
+    cursor: 'pointer',
+  },
+        }
