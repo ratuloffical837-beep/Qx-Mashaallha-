@@ -1,11 +1,8 @@
-import RulesPage from './RulesPage'
-// state: const [showRules, setShowRules] = useState(false)
-// settings বাটনের পাশে: <button onClick={() => setShowRules(true)}>📜 Rules</button>
-// নিচে: {showRules && <RulesPage onClose={() => setShowRules(false)} />}
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from './firebase'
 import { doc, onSnapshot } from 'firebase/firestore'
 import PaymentPage from './PaymentPage'
+import RulesPage from './RulesPage'
 import { forexMarkets, runSignalEngine, MIN_CANDLES } from './signalEngine'
 
 // ── Telegram WebApp ───────────────────────────────────────────
@@ -30,7 +27,10 @@ const CANDLE_COUNT = 150        // history pulled per signal (well under 5000-po
 const DAILY_LIMIT_FALLBACK = 800 // shown until api_usage confirms the real plan limit
 const TRADE_SECONDS = 60         // 1-minute candle prediction
 
-// ── localStorage helpers ──────────────────────────────────────
+// ── Free tier config ──────────────────────────────────────────
+const FREE_DAILY_SIGNAL_LIMIT = 3
+
+// ── localStorage helpers (Twelve Data usage) ──────────────────
 const localDateStr = () => {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
@@ -53,11 +53,32 @@ const bumpStoredUsage = () => {
   return u.count
 }
 
+// ── localStorage helpers (Free-tier daily signal count) ────────
+const getFreeUsage = () => {
+  try {
+    const raw = JSON.parse(localStorage.getItem('free_signal_usage'))
+    if (raw && raw.date === localDateStr()) return raw
+  } catch (_) {}
+  const fresh = { date: localDateStr(), count: 0 }
+  localStorage.setItem('free_signal_usage', JSON.stringify(fresh))
+  return fresh
+}
+
+const bumpFreeUsage = () => {
+  const u = getFreeUsage()
+  u.count += 1
+  localStorage.setItem('free_signal_usage', JSON.stringify(u))
+  return u
+}
+
 export default function App() {
   const tgUser = getTgUser()
 
-  // ── Auth ──────────────────────────────────────────────────────
-  const [authStatus, setAuthStatus] = useState('loading')
+  // ── Auth / Subscription ────────────────────────────────────────
+  const [authStatus, setAuthStatus] = useState('loading') // loading|new|pending|approved|rejected|expired
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [showRules, setShowRules] = useState(false)
+  const [freeUsage, setFreeUsage] = useState(getFreeUsage())
 
   // ── Twelve Data API key state ───────────────────────────────
   const [apiKey, setApiKey] = useState(localStorage.getItem('td_api_key') || '')
@@ -88,6 +109,9 @@ export default function App() {
     return days < 3 ? 6 : days < 6 ? 12 : 20
   })()
 
+  // ── Is this user premium right now? ─────────────────────────
+  const isPremium = authStatus === 'approved'
+
   // ── Firestore auth listener ───────────────────────────────────
   useEffect(() => {
     const uid = String(tgUser.id)
@@ -104,8 +128,10 @@ export default function App() {
         setAuthStatus('rejected')
       } else if (d.status === 'disconnected') {
         setAuthStatus('expired')
-      } else {
+      } else if (d.status === 'pending') {
         setAuthStatus('pending')
+      } else {
+        setAuthStatus('new')
       }
     }, (err) => {
       console.error('Firestore error:', err)
@@ -123,6 +149,8 @@ export default function App() {
         if (now < new Date(unlockTime)) setIsLocked(true)
         else { setIsLocked(false); setUnlockTime(null); localStorage.removeItem('unlock_time') }
       }
+      // keep free-usage display in sync across local-midnight rollover
+      setFreeUsage(getFreeUsage())
     }, 1000)
     return () => clearInterval(tick)
   }, [unlockTime])
@@ -215,6 +243,16 @@ export default function App() {
     if (isLocked) return
     if (usage.count >= planLimit) { setConnStatus('DAILY LIMIT শেষ ❌'); return }
 
+    // ── Free-tier daily signal limit gate ─────────────────────
+    if (!isPremium) {
+      const fu = getFreeUsage()
+      if (fu.count >= FREE_DAILY_SIGNAL_LIMIT) {
+        setConnStatus('ফ্রি লিমিট শেষ ❌')
+        setShowPaymentModal(true)
+        return
+      }
+    }
+
     setScanning(true)
     setConnStatus('ডেটা আনা হচ্ছে...')
 
@@ -229,6 +267,9 @@ export default function App() {
       const result = runSignalEngine(candles)
       setSigData(result)
       setConnStatus('CONNECTED ✅')
+
+      // Count this generation against the free daily quota (premium = unlimited)
+      if (!isPremium) setFreeUsage(bumpFreeUsage())
 
       if (result.direction) {
         setLastPred(result.direction)
@@ -245,7 +286,7 @@ export default function App() {
     } finally {
       setScanning(false)
     }
-  }, [apiKey, selected, isLocked, usage, planLimit, fetchCandles]) // eslint-disable-line
+  }, [apiKey, selected, isLocked, usage, planLimit, fetchCandles, isPremium]) // eslint-disable-line
 
   // ── Result check (single follow-up call, not polling) ──────
   const checkResult = useCallback(async (predDirection) => {
@@ -289,7 +330,7 @@ export default function App() {
     }
   }, [apiKey, selected, mLevel, dailyTarget])
 
-  // ── Auth guards ───────────────────────────────────────────────
+  // ── Loading screen ────────────────────────────────────────────
   if (authStatus === 'loading') {
     return (
       <div style={{ background: C.bg, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
@@ -299,11 +340,7 @@ export default function App() {
     )
   }
 
-  if (['new', 'pending', 'rejected', 'expired'].includes(authStatus)) {
-    return <PaymentPage tgUser={tgUser} status={authStatus} />
-  }
-
-  // ── Trading UI ────────────────────────────────────────────────
+  // ── Trading UI (always shown once loaded — free users included) ─
   const dir = sigData.direction
   const str = sigData.strength
   const conf = sigData.confidence
@@ -326,22 +363,77 @@ export default function App() {
   }
 
   const usagePct = Math.min(100, Math.round((usage.count / planLimit) * 100))
+  const freeRemaining = Math.max(0, FREE_DAILY_SIGNAL_LIMIT - freeUsage.count)
 
   return (
     <div style={{ background: C.bg, color: C.text, fontFamily: "'Inter',sans-serif", minHeight: '100vh', overflowX: 'hidden' }}>
 
-      {/* ── HEADER ── */}
+      {/* ── HEADER — connStatus | badge/upgrade | 📜 Rules | time ──
+          Rules icon lives HERE (not inside the isLocked block below) so
+          it is always reachable — locked, free, premium, doesn't matter. */}
       <header style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: '8px 14px', background: C.card, borderBottom: `1px solid ${C.border}`,
-        fontSize: 11, fontWeight: 700,
+        fontSize: 11, fontWeight: 700, gap: 6,
       }}>
-        <span style={{ color: connStatus.includes('✅') || connStatus === 'READY' ? C.green : connStatus.includes('❌') ? C.red : C.gold }}>
+        <span style={{ color: connStatus.includes('✅') || connStatus === 'READY' ? C.green : connStatus.includes('❌') ? C.red : C.gold, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {connStatus}
         </span>
-        <span style={{ color: C.gold }}>🎯 লক্ষ্য: ৳{dailyTarget}</span>
-        <span style={{ color: C.muted, fontVariantNumeric: 'tabular-nums' }}>{liveTime}</span>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          {isPremium ? (
+            <span style={{ color: C.gold, fontWeight: 900, fontSize: 13, letterSpacing: '0.02em' }}>
+              💎★★★★★
+            </span>
+          ) : (
+            <button onClick={() => setShowPaymentModal(true)} style={{
+              background: `linear-gradient(90deg, ${C.gold}, #ffd76a)`, color: '#000',
+              border: 'none', borderRadius: 6, padding: '4px 10px', fontWeight: 800, fontSize: 11, cursor: 'pointer',
+            }}>⬆️ Upgrade</button>
+          )}
+
+          {/* Rules — always visible to every user, every state */}
+          <button onClick={() => setShowRules(true)} aria-label="Rules" style={{
+            background: C.panel, border: `1px solid ${C.border}`, color: C.gold,
+            borderRadius: 6, padding: '4px 8px', fontSize: 13, cursor: 'pointer', lineHeight: 1,
+          }}>📜</button>
+        </div>
+
+        <span style={{ color: C.muted, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{liveTime}</span>
       </header>
+
+      {/* ── SUB-HEADER: target + free/premium status ── */}
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '6px 14px', background: '#0d1117', borderBottom: `1px solid ${C.border}`,
+        fontSize: 10.5,
+      }}>
+        <span style={{ color: C.gold, fontWeight: 700 }}>🎯 লক্ষ্য: ৳{dailyTarget}</span>
+        {isPremium ? (
+          <span style={{ color: C.green, fontWeight: 700 }}>✅ প্রিমিয়াম সক্রিয় — আনলিমিটেড সিগনাল</span>
+        ) : (
+          <span style={{ color: freeRemaining === 0 ? C.red : C.muted, fontWeight: 700 }}>
+            🆓 ফ্রি সিগনাল বাকি: {freeRemaining}/{FREE_DAILY_SIGNAL_LIMIT}
+          </span>
+        )}
+      </div>
+
+      {/* ── pending / rejected / expired notice banners (non-blocking) ── */}
+      {authStatus === 'pending' && (
+        <div style={{ background: '#1a1200', borderBottom: `1px solid ${C.gold}33`, color: C.gold, fontSize: 11, padding: '8px 14px', textAlign: 'center' }}>
+          ⏳ আপনার পেমেন্ট রিভিউতে আছে — কনফার্ম হলে প্রিমিয়াম অ্যাক্টিভ হবে
+        </div>
+      )}
+      {authStatus === 'rejected' && (
+        <div style={{ background: '#2a0000', borderBottom: `1px solid ${C.red}33`, color: C.red, fontSize: 11, padding: '8px 14px', textAlign: 'center' }}>
+          ❌ আপনার আগের পেমেন্ট রিজেক্ট হয়েছে — আবার চেষ্টা করতে Upgrade বাটনে চাপুন
+        </div>
+      )}
+      {authStatus === 'expired' && (
+        <div style={{ background: '#1a1200', borderBottom: `1px solid ${C.gold}33`, color: C.gold, fontSize: 11, padding: '8px 14px', textAlign: 'center' }}>
+          ⚠️ আপনার প্রিমিয়াম মেয়াদ শেষ হয়েছে — ফ্রি টায়ারে ফিরিয়ে আনা হয়েছে
+        </div>
+      )}
 
       {/* ── CHART ── */}
       <div style={{ height: '34vh', background: '#0d1117' }}>
@@ -552,6 +644,19 @@ export default function App() {
           </>
         )}
       </div>
+
+      {/* ── UPGRADE / PAYMENT MODAL ── */}
+      {showPaymentModal && (
+        <PaymentPage
+          tgUser={tgUser}
+          status={authStatus}
+          onClose={() => setShowPaymentModal(false)}
+        />
+      )}
+
+      {/* ── RULES MODAL — reachable by every user, every state (locked included) ── */}
+      {showRules && <RulesPage onClose={() => setShowRules(false)} />}
+
     </div>
   )
-                                          }
+                                      }
